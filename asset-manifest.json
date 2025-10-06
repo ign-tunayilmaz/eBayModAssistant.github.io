@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/eBayModAssistant.github.io/static/css/main.e6c13ad2.css",
+    "main.js": "/eBayModAssistant.github.io/static/js/main.61519b61.js",
+    "static/js/453.f1b1a1d5.chunk.js": "/eBayModAssistant.github.io/static/js/453.f1b1a1d5.chunk.js",
+    "index.html": "/eBayModAssistant.github.io/index.html",
+    "main.e6c13ad2.css.map": "/eBayModAssistant.github.io/static/css/main.e6c13ad2.css.map",
+    "main.61519b61.js.map": "/eBayModAssistant.github.io/static/js/main.61519b61.js.map",
+    "453.f1b1a1d5.chunk.js.map": "/eBayModAssistant.github.io/static/js/453.f1b1a1d5.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.61519b61.js"
+  ]
+}
