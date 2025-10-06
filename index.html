@@ -8,7 +8,13 @@ const ModerationChecklist = () => {
   const [openDropdown, setOpenDropdown] = useState(null);
   const [showEOSReport, setShowEOSReport] = useState(false);
   const [showAdditionalTemplates, setShowAdditionalTemplates] = useState(true);
+  const [showBanTooltip, setShowBanTooltip] = useState(false);
+  const [showBanTemplates, setShowBanTemplates] = useState(false);
+  const [showFAQ, setShowFAQ] = useState(false);
+  const [faqSearch, setFaqSearch] = useState('');
+  const [expandedFAQs, setExpandedFAQs] = useState({});
   const dropdownRefs = useRef({});
+  const banTooltipRef = useRef(null);
   const [templateInputs, setTemplateInputs] = useState({
     friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
     warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
@@ -17,14 +23,228 @@ const ModerationChecklist = () => {
     banInternal: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '' }
   });
   const [counters, setCounters] = useState({
-    P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-    P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-    P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-    P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-    P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 }
+    P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+    P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+    P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+    P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+    P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
   });
 
-  const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban'];
+  const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
+
+  const faqItems = [
+    {
+      id: 'ban-process',
+      question: 'How do I ban a user?',
+      answer: `**Ban User Process:**
+• Leave Username, Email and IP with an asterisk icon (*)
+• If the ban is permanent, check "Make ban permanent" checkbox
+• Most common ban reason is spamming the forum
+• Document in admin notes
+• Only tag members who receive a 30 day or indefinite ban (use the spammer tag if it's a spammer instead of indefinite ban)
+
+**Ban Tags:** 30 Day, Indefinite, Spammer`
+    },
+    {
+      id: 'ban-internal-reason',
+      question: 'What should I write in the internal reason for ban?',
+      answer: `**Internal reason for ban:**
+Indefinite Login Restriction
+Advertising Spam
+Username: xxx
+Email: xxx@xxx.com
+IP: xxx.xxx.xxx.xxx
+<a href="URL">Example of Spam</a>`
+    },
+    {
+      id: 'ban-public-reason',
+      question: 'What should I write in the public reason for ban?',
+      answer: `**Public reason for ban:**
+Violating the rules and policies of the eBay US Community, with actions such as "advertising spam". Your restriction is indefinite, effective [DATE].
+
+Important: Creating multiple accounts for use on eBay's boards for the purpose of disruption or to avoid detection may result in permanent sanction or suspension of all associated registrations. If you would like to appeal your suspension, contact askcommunity@ebay.com.`
+    },
+    {
+      id: 'necro-post',
+      question: 'How do I handle necro posts (old threads)?',
+      answer: `**Necro Post Process:**
+• Posts that are older than 6 months can be closed
+• Use Necro post macro to reply to the topic
+• No need to mention age of the post on reply. Just say "This thread is being closed as it's old"
+• Close the thread for new replies`
+    },
+    {
+      id: 'queue-management',
+      question: 'How do I manage my queue?',
+      answer: `**Managing Your Queue:**
+1. Make sure your Smart View is selected (lightbulb icon is blue)
+2. Work your way down from top to bottom (oldest content first)
+3. If you assign a conversation to yourself, you must take action: respond, escalate, or close
+4. If you reply to a post or send a PM it will go to Pending
+5. Only close a conversation when completely finished`
+    },
+    {
+      id: 'tagging-actions',
+      question: 'When should I add tags to document moderation actions?',
+      answer: `**Required Tags for Moderation Actions:**
+• **Edited** - use when editing a post
+• **Moved** - use when moving a thread to the proper board
+• **Moderated** - use when moving a thread/post to moderated content
+• **Locked** - use when a topic needs locked to further discussion`
+    },
+    {
+      id: 'abuse-reports',
+      question: 'How do I handle abuse and filter reports?',
+      answer: `**Abuse & Filter Reports Process:**
+1. Claim (Assign to You), look for other reports on same user
+2. If NAR: reply to AR and close as NAR (FR doesn't need reply)
+3. If needs action:
+   • Search for the reported conversation
+   • Claim the conversation
+   • Take appropriate moderation action
+   • Add tag to post (Edited, Moved, Moderated, or Locked)
+   • Create a new conversation from the moderated post
+   • Close rest of thread as NAR
+   • Document action in admin notes
+4. Return to AR and reply with actions taken (skip for FR)
+5. Close AR/FR as Mod Action Taken or Duplicate Report - No Action Required`
+    },
+    {
+      id: 'ban-spammer',
+      question: 'How do I ban spammers?',
+      answer: `**Banning Spammers Process:**
+1. Claim all reports of same spammer (up to 40 at once)
+2. Reply to duplicate reports and close as Duplicate Report - No Action Required
+3. Use member username link to go to spammer's profile
+4. Mark all posts as spam or move to moderated content
+5. Issue ban and add admin notes
+6. Reply to remaining AR with actions taken and close as Mod Action Taken
+7. Search for username
+8. Add Spammer tag to author profile
+9. Close conversation as Mod Action Taken
+10. Use Open Conversations from Spammers Widget to close all conversations`
+    },
+    {
+      id: 'escalation',
+      question: 'When and how should I escalate conversations?',
+      answer: `**Escalating Conversations:**
+
+**For Mod Help:**
+1. Claim + review thread
+2. Action thread as needed
+3. Click Request Help
+4. Add internal note with reason
+
+**Escalate to Leads for:**
+• Help on abuse/filter reports
+• Ban approvals for 30 days or indefinite (no approval needed for spam bans)
+• Inappropriate usernames/avatars
+• Extremely disruptive behavior
+• Threats of violence or bomb threats
+• Function issues on eBay or Community
+• Underage users
+• Reporters or Third Party Representatives
+• Suspected impersonation of eBay Employees/Moderators
+• Employee violations
+
+**Suicide Threats (URGENT):**
+• Change priority to P0
+• Add EbCT tag
+• Click "Request Help"
+• Note: "Escalating (username) due to suicide threat"`
+    },
+    {
+      id: 'closing-conversations',
+      question: 'When and how should I close conversations?',
+      answer: `**Closing Conversations:**
+
+**Abuse Reports:**
+• Must be replied to with actions taken
+• If requires no action: close as NAR
+• If requires action: close as Mod Action Taken
+• If duplicate: reply with duplicate and close as Duplicate Report - No Action Required
+• If PM'ing from AR: reply but don't close
+
+**Discussion Board Content:**
+• If no action required: close as NAR
+• If action results in ban: close as Mod Action Taken
+• If action results in friendly/warning PM: DON'T close (auto-closes after 7 days)
+
+**Answer Center Content:**
+• If no action required: close as NAR
+• If removing content: close as Mod Action Taken`
+    },
+    {
+      id: 'templates-macros',
+      question: 'How do I use templates (macros)?',
+      answer: `**Using Templates:**
+1. If steering/locking: toggle to Public Post
+2. If PM'ing: toggle to Private Message
+3. Click templates button (lower right in agent view)
+4. Scroll to find needed template
+5. Hover and click plus (+) sign to add to text box
+
+**Note:** Bold italics in templates indicate portions you need to change. You can add multiple templates - the 2nd template appends to the bottom.`
+    },
+    {
+      id: 'voc-tagging',
+      question: 'What is VoC tagging and when should I use it?',
+      answer: `**VoC (Voice of the Customer) Tagging:**
+
+**What to Tag:**
+• Selling topics with many replies or that continue for days
+• Something went wrong and many people talking about it
+• Insights eBay could use to improve products
+• Unusual/unique buyer/seller stories
+• Cases where eBay decided in buyer's favor with negative community reaction
+• Reactions to eBay media/marketing
+• Feedback about marketplace or community platform
+
+**What NOT to Tag:**
+• Common/known support issues
+• Feedback/complaints about moderation
+• Banning and guideline violations`
+    },
+    {
+      id: 'important-notes',
+      question: 'What are some important things to remember?',
+      answer: `**Important Notes:**
+• Do NOT send replies to Mentors after taking action on their Abuse Reports
+• Be careful with Abuse Reports - do not move to public board
+• Do NOT moderate Mentor Boards and Mentor Content
+• Do NOT send warnings to Mentors
+• We do not escalate to eBay unless there is threat, child abuse, suicidal thoughts, etc.
+• Close threads with no comments in past 6 months as "Necro"
+• Be careful not to post comments as "No Action Required" - use "Close as" comment, not "Post Public Reply"
+• Base your actions on Community Guidelines`
+    },
+    {
+      id: 'native-tasks',
+      question: 'What tasks need to be done natively on Community?',
+      answer: `**"Native" Mod Tasks (not available in Response):**
+1. Admin Notes
+2. Moving individual replies within a thread
+3. Answer Center - sending private messages
+4. Editing thread titles
+5. Spam Quarantine
+6. Batch marking blatant spammer posts as spam
+7. Banning members
+8. Locking threads
+9. Image/Video moderation console`
+    }
+  ];
+
+  const filteredFAQs = faqItems.filter(faq => 
+    faq.question.toLowerCase().includes(faqSearch.toLowerCase()) ||
+    faq.answer.toLowerCase().includes(faqSearch.toLowerCase())
+  );
+
+  const toggleFAQ = (faqId) => {
+    setExpandedFAQs({
+      ...expandedFAQs,
+      [faqId]: !expandedFAQs[faqId]
+    });
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -34,13 +254,16 @@ const ModerationChecklist = () => {
           setOpenDropdown(null);
         }
       }
+      if (showBanTooltip && banTooltipRef.current && !banTooltipRef.current.contains(event.target)) {
+        setShowBanTooltip(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [openDropdown]);
+  }, [openDropdown, showBanTooltip]);
 
   const templates = {
     friendlyRemovedPost: `Hi [USERNAME],
@@ -338,11 +561,11 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
 
   const resetCounters = () => {
     setCounters({
-      P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-      P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-      P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-      P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 },
-      P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0 }
+      P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+      P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+      P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+      P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
+      P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
     });
   };
 
@@ -382,12 +605,15 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
     await copyToClipboard(report, 'eos-report');
   };
 
+  const banTemplates = [
+    { id: 'banInternal', name: 'Ban Templates: Internal Reason', content: '', isDynamic: true, isBan: true }
+  ];
+
   const templateList = [
     { id: 'friendlyRemovedPost', name: 'Friendly PM: Removed Post', content: templates.friendlyRemovedPost, isDynamic: true },
     { id: 'warningRemovedPost', name: 'Warning PM: Removed Post', content: templates.warningRemovedPost, isDynamic: true },
     { id: 'friendlyEditedPost', name: 'Friendly PM: Edited Post', content: templates.friendlyEditedPost, isDynamic: true },
     { id: 'warningEditedPost', name: 'Warning PM: Edited Post', content: templates.warningEditedPost, isDynamic: true },
-    { id: 'banInternal', name: 'Ban Templates: Internal Reason', content: '', isDynamic: true, isBan: true },
     { id: 'necroThread', name: 'Locking: Necro Thread', content: templates.necroThread, isDynamic: false },
     { id: 'opRequest', name: 'Locking: OP Request', content: templates.opRequest, isDynamic: false },
     { id: 'heatedDiscussion', name: 'Steering: Heated Discussion', content: templates.heatedDiscussion, isDynamic: false },
@@ -428,6 +654,17 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
               <h1 className="text-3xl font-bold text-slate-800">eBay Community Moderation</h1>
               <p className="text-slate-600">Quick reference guide with ready-to-use templates</p>
             </div>
+            <a
+              href="https://ebay.response.lithium.com/khoros/login"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold text-sm transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              Care Login
+            </a>
           </div>
 
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border-2 border-slate-200">
@@ -625,6 +862,172 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
         </div>
 
         <div className="mt-6 bg-white rounded-lg shadow p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <button
+              onClick={() => setShowBanTemplates(!showBanTemplates)}
+              className="flex-1 flex items-center justify-between"
+            >
+              <h3 className="font-semibold text-slate-800">Ban Templates</h3>
+              <div className="flex items-center gap-2">
+                {showBanTemplates ? (
+                  <>
+                    <span className="text-sm text-slate-600">Hide</span>
+                    <ChevronUp className="w-5 h-5 text-slate-600" />
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm text-slate-600">Show</span>
+                    <ChevronDown className="w-5 h-5 text-slate-600" />
+                  </>
+                )}
+              </div>
+            </button>
+            <div className="relative" ref={banTooltipRef}>
+              <button
+                onClick={() => setShowBanTooltip(!showBanTooltip)}
+                className="text-slate-500 hover:text-slate-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </button>
+              {showBanTooltip && (
+                <div className="absolute left-0 top-full mt-2 w-80 bg-slate-800 text-white text-xs rounded-lg p-3 shadow-lg z-20">
+                  <div className="absolute -top-2 left-4 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-slate-800"></div>
+                  If you are banning a spammer, use "spammer" tag in Khoros Care. Otherwise, only use tags if you are banning someone for 30 days or indefinitely.
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {showBanTemplates && (
+            <div className="space-y-2">
+              {banTemplates.map((template) => {
+                const isExpanded = expandedTemplates[template.id];
+                const populatedContent = getPopulatedTemplate(template.id, template.content);
+                
+                return (
+                  <div key={template.id} className="border border-orange-300 rounded-lg overflow-hidden">
+                    <div className="bg-orange-100 px-3 py-2 flex items-center justify-between border-b border-orange-300">
+                      <span className="text-sm font-semibold text-slate-700">
+                        {template.name}
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => copyToClipboard(populatedContent, template.id)}
+                          className="flex items-center gap-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm font-medium transition-colors"
+                        >
+                          {copiedId === template.id ? (
+                            <>
+                              <Check className="w-4 h-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4" />
+                              Copy
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => toggleTemplate(template.id)}
+                          className="flex items-center gap-1 px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-sm font-medium transition-colors"
+                        >
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="w-4 h-4" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-4 h-4" />
+                              Show
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {isExpanded && (
+                      <>
+                        <div className="p-3 bg-orange-50 border-b border-orange-300">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs font-semibold text-slate-700">Fill in the ban details:</div>
+                            <button
+                              onClick={() => clearTemplateInputs(template.id)}
+                              className="px-3 py-1 bg-slate-300 hover:bg-slate-400 text-slate-700 rounded text-xs font-medium transition-colors"
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-xs font-medium text-slate-700 block mb-1">Ban Period</label>
+                              <select
+                                value={templateInputs[template.id].banPeriod}
+                                onChange={(e) => updateTemplateInput(template.id, 'banPeriod', e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              >
+                                <option value="1 Day">1 Day</option>
+                                <option value="3 Days">3 Days</option>
+                                <option value="7 Days">7 Days</option>
+                                <option value="30 Days">30 Days</option>
+                                <option value="Indefinite">Indefinite</option>
+                              </select>
+                            </div>
+                            <textarea
+                              placeholder="Reasoning"
+                              value={templateInputs[template.id].reasoning}
+                              onChange={(e) => updateTemplateInput(template.id, 'reasoning', e.target.value)}
+                              rows="3"
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Username"
+                              value={templateInputs[template.id].username}
+                              onChange={(e) => updateTemplateInput(template.id, 'username', e.target.value)}
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Email"
+                              value={templateInputs[template.id].email}
+                              onChange={(e) => updateTemplateInput(template.id, 'email', e.target.value)}
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="IP Address"
+                              value={templateInputs[template.id].ip}
+                              onChange={(e) => updateTemplateInput(template.id, 'ip', e.target.value)}
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Example of Spam URL"
+                              value={templateInputs[template.id].spamUrl}
+                              onChange={(e) => updateTemplateInput(template.id, 'spamUrl', e.target.value)}
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="p-3 bg-white">
+                          <pre className="text-xs text-slate-600 whitespace-pre-wrap font-mono">
+                            {populatedContent}
+                          </pre>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 bg-white rounded-lg shadow p-4">
           <button
             onClick={() => setShowAdditionalTemplates(!showAdditionalTemplates)}
             className="w-full flex items-center justify-between mb-3"
@@ -651,7 +1054,6 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
                 const isExpanded = expandedTemplates[template.id];
                 const isEditedTemplate = ['friendlyEditedPost', 'warningEditedPost'].includes(template.id);
                 const isRemovedTemplate = ['friendlyRemovedPost', 'warningRemovedPost'].includes(template.id);
-                const isBanTemplate = template.isBan;
                 const populatedContent = template.isDynamic ? getPopulatedTemplate(template.id, template.content) : template.content;
                 
                 return (
@@ -698,76 +1100,7 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
                     
                     {isExpanded && (
                       <>
-                        {template.isDynamic && isBanTemplate && (
-                          <div className="p-3 bg-orange-50 border-b border-slate-300">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="text-xs font-semibold text-slate-700">Fill in the ban details:</div>
-                              <button
-                                onClick={() => clearTemplateInputs(template.id)}
-                                className="px-3 py-1 bg-slate-300 hover:bg-slate-400 text-slate-700 rounded text-xs font-medium transition-colors"
-                              >
-                                Clear All
-                              </button>
-                            </div>
-                            <div className="space-y-2">
-                              <div>
-                                <label className="text-xs font-medium text-slate-700 block mb-1">Ban Period</label>
-                                <select
-                                  value={templateInputs[template.id].banPeriod}
-                                  onChange={(e) => updateTemplateInput(template.id, 'banPeriod', e.target.value)}
-                                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                  <option value="1 Day">1 Day</option>
-                                  <option value="3 Days">3 Days</option>
-                                  <option value="7 Days">7 Days</option>
-                                  <option value="30 Days">30 Days</option>
-                                  <option value="Indefinite">Indefinite</option>
-                                </select>
-                              </div>
-                              <div className="bg-blue-100 border-2 border-blue-300 rounded-lg p-3">
-                                <div className="text-xs font-semibold text-blue-800 mb-1">Ready to copy:</div>
-                                <div className="text-sm font-bold text-blue-900">{templateInputs[template.id].banPeriod} Login Restriction</div>
-                              </div>
-                              <textarea
-                                placeholder="Reasoning"
-                                value={templateInputs[template.id].reasoning}
-                                onChange={(e) => updateTemplateInput(template.id, 'reasoning', e.target.value)}
-                                rows="3"
-                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Username"
-                                value={templateInputs[template.id].username}
-                                onChange={(e) => updateTemplateInput(template.id, 'username', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Email"
-                                value={templateInputs[template.id].email}
-                                onChange={(e) => updateTemplateInput(template.id, 'email', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <input
-                                type="text"
-                                placeholder="IP Address"
-                                value={templateInputs[template.id].ip}
-                                onChange={(e) => updateTemplateInput(template.id, 'ip', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Example of Spam URL"
-                                value={templateInputs[template.id].spamUrl}
-                                onChange={(e) => updateTemplateInput(template.id, 'spamUrl', e.target.value)}
-                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              />
-                            </div>
-                          </div>
-                        )}
-                        
-                        {template.isDynamic && !isBanTemplate && (
+                        {template.isDynamic && (
                           <div className="p-3 bg-blue-50 border-b border-slate-300">
                             <div className="flex items-center justify-between mb-2">
                               <div className="text-xs font-semibold text-slate-700">Fill in the template fields:</div>
@@ -842,6 +1175,76 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
                 );
               })}
             </div>
+          )}
+        </div>
+
+        <div className="mt-6 bg-white rounded-lg shadow p-4">
+          <button
+            onClick={() => setShowFAQ(!showFAQ)}
+            className="w-full flex items-center justify-between mb-3"
+          >
+            <h3 className="font-semibold text-slate-800">Moderation FAQ & Guidelines</h3>
+            <div className="flex items-center gap-2">
+              {showFAQ ? (
+                <>
+                  <span className="text-sm text-slate-600">Hide</span>
+                  <ChevronUp className="w-5 h-5 text-slate-600" />
+                </>
+              ) : (
+                <>
+                  <span className="text-sm text-slate-600">Show</span>
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                </>
+              )}
+            </div>
+          </button>
+          
+          {showFAQ && (
+            <>
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search FAQ..."
+                  value={faqSearch}
+                  onChange={(e) => setFaqSearch(e.target.value)}
+                  className="w-full px-4 py-2 text-sm border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                {filteredFAQs.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    No FAQs found matching your search.
+                  </div>
+                ) : (
+                  filteredFAQs.map((faq) => {
+                    const isExpanded = expandedFAQs[faq.id];
+                    return (
+                      <div key={faq.id} className="border border-slate-300 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => toggleFAQ(faq.id)}
+                          className="w-full px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors flex items-center justify-between text-left"
+                        >
+                          <span className="font-semibold text-slate-800 text-sm">{faq.question}</span>
+                          {isExpanded ? (
+                            <ChevronUp className="w-4 h-4 text-slate-600 flex-shrink-0 ml-2" />
+                          ) : (
+                            <ChevronDown className="w-4 h-4 text-slate-600 flex-shrink-0 ml-2" />
+                          )}
+                        </button>
+                        {isExpanded && (
+                          <div className="p-4 bg-white border-t border-slate-200">
+                            <div className="text-sm text-slate-700 whitespace-pre-line">
+                              {faq.answer}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
           )}
         </div>
 
