@@ -20,7 +20,8 @@ const ModerationChecklist = () => {
     warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
     friendlyEditedPost: { username: '', here: '', guidelines: '', quote: '' },
     warningEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-    banInternal: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '' }
+    // Combined Ban template: internal + public
+    banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
   });
   const [counters, setCounters] = useState({
     P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
@@ -498,12 +499,23 @@ Thank you.`,
         ...templateInputs,
         [templateId]: { username: '', here: '', guidelines: '', quote: '' }
       });
-    } else if (templateId === 'banInternal') {
+    } else if (templateId === 'banCombined') {
       setTemplateInputs({
         ...templateInputs,
-        [templateId]: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '' }
+        [templateId]: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
       });
     }
+  };
+
+  const getDaysFromBanPeriod = (banPeriod) => {
+    if (!banPeriod) return '';
+    const map = {
+      '1 Day': 1,
+      '3 Days': 3,
+      '7 Days': 7,
+      '30 Days': 30,
+    };
+    return map[banPeriod] ?? 'Indefinite';
   };
 
   const getPopulatedTemplate = (templateId, baseTemplate) => {
@@ -523,15 +535,12 @@ Thank you.`,
         .replace('[HERE]', inputs.here || '[HERE]')
         .replace('[GUIDELINES]', inputs.guidelines || '[GUIDELINES]')
         .replace('[QUOTE]', inputs.quote || '[QUOTE]');
-    } else if (templateId === 'banInternal') {
-      populated = `${inputs.banPeriod} Login Restriction
-
-Reasoning: ${inputs.reasoning || '[Add reasoning]'}
-
-Username: ${inputs.username || '[Username]'}
-Email: ${inputs.email || '[Email]'}
-IP: ${inputs.ip || '[IP Address]'}
-Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
+    } else if (templateId === 'banCombined') {
+      const length = getDaysFromBanPeriod(inputs.banPeriod);
+      const lengthText = typeof length === 'number' ? `${length} days` : `${length}`;
+      const internal = `Internal Reason\n\n${inputs.banPeriod || '[Ban Period]'} Login Restriction\n\nReasoning: ${inputs.reasoning || '[Reasoning]'}\nUsername: ${inputs.username || '[Username]'}\nEmail: ${inputs.email || '[Email]'}\nIP: ${inputs.ip || '[IP Address]'}\nExample of Spam URL: ${inputs.spamUrl || '[Spam URL]'}\nStart Date: ${inputs.startDate || '[DATE]'}\nBan Length: ${lengthText}`;
+      const publicR = `Public Reason\n\nViolating the rules and policies of the eBay Community with actions such as ${inputs.reasoning || '[Reasoning]'}. Your ban is effective from ${inputs.startDate || '[DATE]'} and will last ${lengthText}.`;
+      populated = `${internal}\n\n---\n\n${publicR}`;
     }
     
     return populated;
@@ -606,7 +615,7 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
   };
 
   const banTemplates = [
-    { id: 'banInternal', name: 'Ban Templates: Internal Reason', content: '', isDynamic: true, isBan: true }
+    { id: 'banCombined', name: 'Ban Templates: Internal & Public', content: '', isDynamic: true, isBan: true }
   ];
 
   const templateList = [
@@ -960,57 +969,67 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
                               Clear All
                             </button>
                           </div>
-                          <div className="space-y-2">
-                            <div>
-                              <label className="text-xs font-medium text-slate-700 block mb-1">Ban Period</label>
-                              <select
-                                value={templateInputs[template.id].banPeriod}
-                                onChange={(e) => updateTemplateInput(template.id, 'banPeriod', e.target.value)}
+                          {template.id === 'banCombined' ? (
+                            <div className="space-y-2">
+                              <div>
+                                <label className="text-xs font-medium text-slate-700 block mb-1">Ban Period</label>
+                                <select
+                                  value={templateInputs[template.id].banPeriod}
+                                  onChange={(e) => updateTemplateInput(template.id, 'banPeriod', e.target.value)}
+                                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                >
+                                  <option value="1 Day">1 Day</option>
+                                  <option value="3 Days">3 Days</option>
+                                  <option value="7 Days">7 Days</option>
+                                  <option value="30 Days">30 Days</option>
+                                  <option value="Indefinite">Indefinite</option>
+                                </select>
+                              </div>
+                              <textarea
+                                placeholder="Reasoning"
+                                value={templateInputs[template.id].reasoning}
+                                onChange={(e) => updateTemplateInput(template.id, 'reasoning', e.target.value)}
+                                rows="3"
                                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                              >
-                                <option value="1 Day">1 Day</option>
-                                <option value="3 Days">3 Days</option>
-                                <option value="7 Days">7 Days</option>
-                                <option value="30 Days">30 Days</option>
-                                <option value="Indefinite">Indefinite</option>
-                              </select>
+                              />
+                              <input
+                                type="text"
+                                placeholder="Username"
+                                value={templateInputs[template.id].username}
+                                onChange={(e) => updateTemplateInput(template.id, 'username', e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Email"
+                                value={templateInputs[template.id].email}
+                                onChange={(e) => updateTemplateInput(template.id, 'email', e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              />
+                              <input
+                                type="text"
+                                placeholder="IP Address"
+                                value={templateInputs[template.id].ip}
+                                onChange={(e) => updateTemplateInput(template.id, 'ip', e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Example of Spam URL"
+                                value={templateInputs[template.id].spamUrl}
+                                onChange={(e) => updateTemplateInput(template.id, 'spamUrl', e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              />
+                              <input
+                                type="date"
+                                placeholder="Start Date"
+                                value={templateInputs[template.id].startDate}
+                                onChange={(e) => updateTemplateInput(template.id, 'startDate', e.target.value)}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              />
+                              {/* Ban length derived from Ban Period; input removed */}
                             </div>
-                            <textarea
-                              placeholder="Reasoning"
-                              value={templateInputs[template.id].reasoning}
-                              onChange={(e) => updateTemplateInput(template.id, 'reasoning', e.target.value)}
-                              rows="3"
-                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Username"
-                              value={templateInputs[template.id].username}
-                              onChange={(e) => updateTemplateInput(template.id, 'username', e.target.value)}
-                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Email"
-                              value={templateInputs[template.id].email}
-                              onChange={(e) => updateTemplateInput(template.id, 'email', e.target.value)}
-                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="IP Address"
-                              value={templateInputs[template.id].ip}
-                              onChange={(e) => updateTemplateInput(template.id, 'ip', e.target.value)}
-                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            />
-                            <input
-                              type="text"
-                              placeholder="Example of Spam URL"
-                              value={templateInputs[template.id].spamUrl}
-                              onChange={(e) => updateTemplateInput(template.id, 'spamUrl', e.target.value)}
-                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            />
-                          </div>
+                          ) : null}
                         </div>
                         
                         <div className="p-3 bg-white">
