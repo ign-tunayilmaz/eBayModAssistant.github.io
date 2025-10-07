@@ -11,6 +11,7 @@ const ModerationChecklist = () => {
   const [showBanTooltip, setShowBanTooltip] = useState(false);
   const [showBanTemplates, setShowBanTemplates] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
+  const [showAdminNotes, setShowAdminNotes] = useState(true);
   const [faqSearch, setFaqSearch] = useState('');
   const [expandedFAQs, setExpandedFAQs] = useState({});
   const dropdownRefs = useRef({});
@@ -1195,6 +1196,83 @@ Thank you.`,
               })}
             </div>
           )}
+        </div>
+
+        <div className="mt-6 bg-white rounded-lg shadow p-4">
+          <button
+            onClick={() => setShowAdminNotes(!showAdminNotes)}
+            className="w-full flex items-center justify-between mb-3"
+          >
+            <h3 className="font-semibold text-slate-800">Admin Notes</h3>
+            <div className="flex items-center gap-2">
+              {showAdminNotes ? (
+                <>
+                  <span className="text-sm text-slate-600">Hide</span>
+                  <ChevronUp className="w-5 h-5 text-slate-600" />
+                </>
+              ) : (
+                <>
+                  <span className="text-sm text-slate-600">Show</span>
+                  <ChevronDown className="w-5 h-5 text-slate-600" />
+                </>
+              )}
+            </div>
+          </button>
+          {showAdminNotes && (() => {
+            // local simple state using useRef-less pattern
+            const [adminInputs, setAdminInputs] = [templateInputs.adminInputs, (next) => setTemplateInputs({ ...templateInputs, adminInputs: next })];
+            if (!adminInputs) {
+              setTemplateInputs({ ...templateInputs, adminInputs: { link: '', removed: '', violation: '' } });
+              return null;
+            }
+            const preview = `<a href="${adminInputs.link || '(insert link to post)'}">Edited Post</a> to remove \"${adminInputs.removed || '(insert only the portion removed)'}\". <br>Sent user a friendly PM for: ${adminInputs.violation || '(insert violation)'}`;
+            return (
+              <div className="space-y-2">
+                <div className="flex items-center justify-end mb-1">
+                  <button
+                    onClick={() => copyToClipboard(preview, 'admin-notes')}
+                    className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
+                  >
+                    {copiedId === 'admin-notes' ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copy
+                      </>
+                    )}
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Link to the post"
+                  value={adminInputs.link}
+                  onChange={(e) => setAdminInputs({ ...adminInputs, link: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Removed Comment Portion"
+                  value={adminInputs.removed}
+                  onChange={(e) => setAdminInputs({ ...adminInputs, removed: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Rule Violation"
+                  value={adminInputs.violation}
+                  onChange={(e) => setAdminInputs({ ...adminInputs, violation: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <div className="p-3 bg-slate-50 border-2 border-slate-200 rounded">
+                  <div className="text-xs text-slate-700" dangerouslySetInnerHTML={{ __html: preview }} />
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="mt-6 bg-white rounded-lg shadow p-4">
