@@ -421,7 +421,7 @@ const ModerationTool = () => {
                 </button>
                 <button onClick={() => setShowEOSReport(false)} className={`px-6 py-3 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>Close</button>
               </div>
-            </div>
+              </div>
           </div>
         )}
 
@@ -436,13 +436,13 @@ const ModerationTool = () => {
                 Are you sure you want to reset all counters? This action cannot be undone.
               </p>
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={resetCounters} 
                   className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold"
                 >
                   Yes, Reset All
                 </button>
-                <button 
+                <button
                   onClick={() => setShowResetConfirm(false)} 
                   className={`flex-1 py-3 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}
                 >
@@ -462,7 +462,7 @@ const ModerationTool = () => {
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">📋</div>
                     <h2 className={`text-lg font-semibold ${textPrimary}`}>{action.title}</h2>
-                  </div>
+                    </div>
                   {isActive ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
                 </button>
                 {isActive && (
@@ -485,40 +485,40 @@ const ModerationTool = () => {
         <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
           <button onClick={() => setShowBanTemplates(!showBanTemplates)} className="w-full flex items-center justify-between mb-3">
             <h3 className={`font-semibold ${textPrimary}`}>Ban Templates</h3>
-            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
               <span className={`text-sm ${textSecondary}`}>{showBanTemplates ? 'Hide' : 'Show'}</span>
               {showBanTemplates ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
-            </div>
-          </button>
+              </div>
+            </button>
           {showBanTemplates && (
             <div className={`border rounded-lg overflow-hidden ${borderColor}`}>
               <div className={`${darkMode ? 'bg-orange-900' : 'bg-orange-100'} px-3 py-2 flex items-center justify-between border-b ${borderColor}`}>
                 <span className={`text-sm font-semibold ${darkMode ? 'text-orange-100' : 'text-slate-700'}`}>Fill ban details</span>
-                <div className="flex gap-2">
+                      <div className="flex gap-2">
                   <button onClick={() => clearTemplateInputs('banCombined')} className={`px-3 py-1 rounded text-xs font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-300 hover:bg-slate-400 text-slate-700'}`}>Clear</button>
                   <button onClick={() => copyToClipboard(getPopulatedTemplate('banCombined', ''), 'banCombined')} className="flex items-center gap-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm font-medium">
                     {copiedId === 'banCombined' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
-                  </button>
-                </div>
-              </div>
+                        </button>
+                      </div>
+                    </div>
               <div className={`${darkMode ? 'bg-slate-900' : 'bg-orange-50'} p-3 space-y-2`}>
                 <select value={templateInputs.banCombined.banPeriod} onChange={(e) => updateTemplateInput('banCombined', 'banPeriod', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}>
-                  <option value="1 Day">1 Day</option>
-                  <option value="3 Days">3 Days</option>
-                  <option value="7 Days">7 Days</option>
-                  <option value="30 Days">30 Days</option>
-                  <option value="Indefinite">Indefinite</option>
-                </select>
+                                  <option value="1 Day">1 Day</option>
+                                  <option value="3 Days">3 Days</option>
+                                  <option value="7 Days">7 Days</option>
+                                  <option value="30 Days">30 Days</option>
+                                  <option value="Indefinite">Indefinite</option>
+                                </select>
                 <textarea placeholder="Reasoning" value={templateInputs.banCombined.reasoning} onChange={(e) => updateTemplateInput('banCombined', 'reasoning', e.target.value)} rows={3} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                 <input type="text" placeholder="Username" value={templateInputs.banCombined.username} onChange={(e) => updateTemplateInput('banCombined', 'username', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                 <input type="text" placeholder="Email" value={templateInputs.banCombined.email} onChange={(e) => updateTemplateInput('banCombined', 'email', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                 <input type="text" placeholder="IP" value={templateInputs.banCombined.ip} onChange={(e) => updateTemplateInput('banCombined', 'ip', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                 <input type="text" placeholder="Spam URL" value={templateInputs.banCombined.spamUrl} onChange={(e) => updateTemplateInput('banCombined', 'spamUrl', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                 <input type="date" value={templateInputs.banCombined.startDate} onChange={(e) => updateTemplateInput('banCombined', 'startDate', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`} />
-              </div>
+                              </div>
               <div className={`${cardBg} p-3`}>
                 <pre className={`text-xs ${textSecondary} whitespace-pre-wrap font-mono`}>{getPopulatedTemplate('banCombined', '')}</pre>
-              </div>
+                            </div>
             </div>
           )}
         </div>
@@ -542,33 +542,33 @@ const ModerationTool = () => {
                   className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`}
                 />
               </div>
-              <div className="space-y-2">
+            <div className="space-y-2">
                 {templateList.filter(template => 
                   template.name.toLowerCase().includes(templateSearch.toLowerCase())
                 ).map((template) => {
-                  const isExpanded = expandedTemplates[template.id];
-                  const populatedContent = template.isDynamic ? getPopulatedTemplate(template.id, template.content) : template.content;
-                  return (
+                const isExpanded = expandedTemplates[template.id];
+                const populatedContent = template.isDynamic ? getPopulatedTemplate(template.id, template.content) : template.content;
+                return (
                     <div key={template.id} className={`border rounded-lg overflow-hidden ${borderColor}`}>
                       <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-100'} px-3 py-2 flex items-center justify-between border-b ${borderColor}`}>
                         <span className={`text-sm font-semibold ${textPrimary}`}>{template.name}</span>
-                        <div className="flex gap-2">
+                      <div className="flex gap-2">
                           <button onClick={() => copyToClipboard(populatedContent, template.id)} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
                             {copiedId === template.id ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
-                          </button>
+                        </button>
                           <button onClick={() => setExpandedTemplates({...expandedTemplates, [template.id]: !isExpanded})} className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>
                             {isExpanded ? (<><ChevronUp className="w-4 h-4" />Hide</>) : (<><ChevronDown className="w-4 h-4" />Show</>)}
-                          </button>
-                        </div>
+                        </button>
                       </div>
-                      {isExpanded && (
-                        <>
-                          {template.isDynamic && (
+                    </div>
+                    {isExpanded && (
+                      <>
+                        {template.isDynamic && (
                             <div className={`${darkMode ? 'bg-slate-900' : 'bg-blue-50'} p-3 border-b ${borderColor} space-y-2`}>
-                              <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mb-2">
                                 <div className={`text-xs font-semibold ${textSecondary}`}>Fill fields</div>
                                 <button onClick={() => clearTemplateInputs(template.id)} className={`px-3 py-1 rounded text-xs font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-300 hover:bg-slate-400 text-slate-700'}`}>Clear</button>
-                              </div>
+                            </div>
                               <input type="text" placeholder="USERNAME" value={templateInputs[template.id]?.username || ''} onChange={(e) => updateTemplateInput(template.id, 'username', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                               {template.type === 'removed' && (
                                 <>
@@ -585,17 +585,17 @@ const ModerationTool = () => {
                                   <textarea placeholder="QUOTE" value={templateInputs[template.id]?.quote || ''} onChange={(e) => updateTemplateInput(template.id, 'quote', e.target.value)} rows={3} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                 </>
                               )}
-                            </div>
-                          )}
+                          </div>
+                        )}
                           <div className={`${cardBg} p-3`}>
                             <pre className={`text-xs ${textSecondary} whitespace-pre-wrap font-mono`}>{populatedContent}</pre>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
             </>
           )}
         </div>
@@ -607,14 +607,14 @@ const ModerationTool = () => {
               {showAdminNotes && (
                 <button onClick={() => copyToClipboard(getPopulatedAdminNote('edited'), 'admin-edited')} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
                   {copiedId === 'admin-edited' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
-                </button>
+          </button>
               )}
               <button onClick={() => setShowAdminNotes(!showAdminNotes)} className="flex items-center gap-1">
                 <span className={`text-sm ${textSecondary}`}>{showAdminNotes ? 'Hide' : 'Show'}</span>
                 {showAdminNotes ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
-              </button>
-            </div>
-          </div>
+                  </button>
+                </div>
+                </div>
           {showAdminNotes && (
             <div className={`space-y-3 pt-3 border-t ${borderColor}`}>
               <input type="text" placeholder="Link to post" value={adminNoteInputs.edited.link} onChange={(e) => updateAdminNoteInput('edited', 'link', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
@@ -636,21 +636,21 @@ const ModerationTool = () => {
             </div>
           </button>
           {showFAQ && (
-            <div className="space-y-2">
+              <div className="space-y-2">
               {faqItems.map((faq) => (
                 <div key={faq.id} className={`border rounded-lg overflow-hidden ${borderColor}`}>
                   <button onClick={() => setExpandedFAQ({...expandedFAQ, [faq.id]: !expandedFAQ[faq.id]})} className={`w-full ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} px-3 py-2 flex items-center justify-between hover:bg-opacity-80`}>
                     <span className={`text-sm font-semibold text-left ${textPrimary}`}>{faq.question}</span>
                     {expandedFAQ[faq.id] ? <ChevronUp className={`w-4 h-4 flex-shrink-0 ml-2 ${textSecondary}`} /> : <ChevronDown className={`w-4 h-4 flex-shrink-0 ml-2 ${textSecondary}`} />}
-                  </button>
+                        </button>
                   {expandedFAQ[faq.id] && (
                     <div className={`p-3 ${darkMode ? 'bg-slate-800' : 'bg-white'} border-t ${borderColor}`}>
                       <p className={`text-sm whitespace-pre-wrap ${textSecondary}`}>{faq.answer}</p>
-                    </div>
-                  )}
-                </div>
+                          </div>
+                        )}
+                      </div>
               ))}
-            </div>
+              </div>
           )}
         </div>
 
