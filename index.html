@@ -601,7 +601,7 @@
                                                                         </>
                                                                     )}
                                                                     {template.type === 'edited' && (
-                                                                        <input type="text" placeholder="HERE (link)" value={templateInputs[template.id]?.here || ''} onChange={(e) => updateTemplateInput(template.id, 'here', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                        <input type="text" placeholder="TITLE" value={templateInputs[template.id]?.here || ''} onChange={(e) => updateTemplateInput(template.id, 'here', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                                                     )}
                                                                     {template.type !== 'username' && (
                                                                         <>
@@ -624,23 +624,6 @@
                             )}
                         </div>
 
-                        {/* Ban Templates Section - COLLAPSED BY DEFAULT */}
-                        <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
-                            <button onClick={() => setShowBanTemplates(!showBanTemplates)} className="w-full flex items-center justify-between mb-3">
-                                <h3 className={`font-semibold ${textPrimary}`}>Ban Templates</h3>
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-sm ${textSecondary}`}>{showBanTemplates ? 'Hide' : 'Show'}</span>
-                                    {showBanTemplates ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
-                                </div>
-                            </button>
-                            {showBanTemplates && (
-                                <div className="space-y-2">
-                                    <div className="p-4 bg-orange-50 rounded-lg">
-                                        <p className="text-sm text-orange-800">Ban template content would go here...</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
 
                         {/* Admin Notes Section - COLLAPSED BY DEFAULT */}
                         <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
