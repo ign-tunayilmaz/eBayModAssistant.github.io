@@ -12,20 +12,54 @@ const ModerationTool = () => {
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showAdditionalTemplates, setShowAdditionalTemplates] = useState(false);
   const [showBanTemplates, setShowBanTemplates] = useState(false);
+  const [showGuidelines, setShowGuidelines] = useState(false);
+  const [showWorkflows, setShowWorkflows] = useState(false);
   const [showAdminNotes, setShowAdminNotes] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
   const [expandedFAQ, setExpandedFAQ] = useState({});
+  const [expandedGuidelines, setExpandedGuidelines] = useState({});
   const [darkMode, setDarkMode] = useState(false);
   const [templateSearch, setTemplateSearch] = useState('');
+  const [guidelinesSearch, setGuidelinesSearch] = useState('');
+  
+  // AI Assistant state
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showAIHistory, setShowAIHistory] = useState(false);
+  const [aiSettings, setAiSettings] = useState({
+    apiKey: '',
+    assistantId: '',
+    baseUrl: 'https://api.openai.com/v1',
+    isActive: false
+  });
+  const [aiAnalysis, setAiAnalysis] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [testContent, setTestContent] = useState('');
+  const [testPriority, setTestPriority] = useState('P3');
+  const [aiHistory, setAiHistory] = useState([]);
+  const [learningData, setLearningData] = useState({
+    totalAnalyses: 0,
+    correctPredictions: 0,
+    overrides: [],
+    patterns: {}
+  });
+
+  // Webscraping state (for integrated template scraping)
+  const [isScrapingLoading, setIsScrapingLoading] = useState(false);
+
+  // Training data collection state
+  const [trainingData, setTrainingData] = useState({
+    instanceCount: 0,
+    trainingInstances: []
+  });
   const dropdownRefs = useRef({});
   
   const [templateInputs, setTemplateInputs] = useState({
-    friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-    warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-    friendlyEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-    warningEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-    csRedirect: { username: '' },
-    banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+    friendlyRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+    warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+    friendlyEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+    warningEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+    csRedirect: { url: '', username: '' },
+    banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
   });
   
   const [counters, setCounters] = useState({
@@ -41,6 +75,711 @@ const ModerationTool = () => {
 
   const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
 
+  // AI Assistant Functions
+  const analyzePost = async (content, priority) => {
+    if (!aiSettings.apiKey || !aiSettings.assistantId || !aiSettings.isActive) {
+      alert('AI Assistant not configured. Please check API Settings.');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      // Create a thread
+      const threadResponse = await fetch(`${aiSettings.baseUrl}/threads`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aiSettings.apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({})
+      });
+
+      if (!threadResponse.ok) {
+        throw new Error(`Thread creation failed: ${threadResponse.status}`);
+      }
+
+      const thread = await threadResponse.json();
+
+      // Add message to thread
+      const messagePayload = {
+        role: 'user',
+        content: `Priority: ${priority}\nPost Content: "${content}"\n\nLearning Context: ${JSON.stringify(learningData.patterns)}`
+      };
+
+      await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aiSettings.apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify(messagePayload)
+      });
+
+      // Run the assistant
+      const runResponse = await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aiSettings.apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          assistant_id: aiSettings.assistantId
+        })
+      });
+
+      const run = await runResponse.json();
+
+      // Poll for completion
+      let runStatus = await pollRunStatus(thread.id, run.id);
+      
+      if (runStatus.status === 'completed') {
+        const messagesResponse = await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/messages`, {
+          headers: {
+            'Authorization': `Bearer ${aiSettings.apiKey}`,
+            'OpenAI-Beta': 'assistants=v2'
+          }
+        });
+
+        const messages = await messagesResponse.json();
+        const assistantMessage = messages.data.find(msg => msg.role === 'assistant');
+        
+        if (assistantMessage) {
+          const analysisText = assistantMessage.content[0].text.value;
+          let analysis;
+          
+          try {
+            analysis = JSON.parse(analysisText);
+          } catch (e) {
+            // Fallback if not proper JSON
+            analysis = {
+              violation: 'Moderate',
+              action: 'Edit',
+              sentiment: '😐',
+              rationale: analysisText,
+              ban_length: 'None',
+              message_to_user: '',
+              admin_note: 'AI analysis error'
+            };
+          }
+
+          const analysisRecord = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            content: content,
+            priority: priority,
+            analysis: analysis,
+            userOverride: null,
+            isCorrect: null
+          };
+
+          setAiHistory(prev => [analysisRecord, ...prev.slice(0, 49)]); // Keep last 50
+          setAiAnalysis(analysis);
+          
+          // Update learning data
+          setLearningData(prev => ({
+            ...prev,
+            totalAnalyses: prev.totalAnalyses + 1
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('AI Analysis Error:', error);
+      alert(`AI Analysis failed: ${error.message}`);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const pollRunStatus = async (threadId, runId) => {
+    const maxAttempts = 30;
+    let attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      const response = await fetch(`${aiSettings.baseUrl}/threads/${threadId}/runs/${runId}`, {
+        headers: {
+          'Authorization': `Bearer ${aiSettings.apiKey}`,
+          'OpenAI-Beta': 'assistants=v2'
+        }
+      });
+      
+      const run = await response.json();
+      
+      if (run.status === 'completed' || run.status === 'failed') {
+        return run;
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      attempts++;
+    }
+    
+    throw new Error('Analysis timeout');
+  };
+
+  const recordUserOverride = (analysisId, userAction, wasCorrect) => {
+    setAiHistory(prev => prev.map(record => 
+      record.id === analysisId 
+        ? { ...record, userOverride: userAction, isCorrect: wasCorrect }
+        : record
+    ));
+
+    setLearningData(prev => ({
+      ...prev,
+      correctPredictions: wasCorrect ? prev.correctPredictions + 1 : prev.correctPredictions,
+      overrides: [...prev.overrides, { analysisId, userAction, timestamp: new Date().toISOString() }].slice(-100)
+    }));
+  };
+
+  // Training data collection for AI improvement (simple localStorage approach)
+  const recordTrainingData = (postContent, priority, userAction) => {
+    // Generate session ID for user tracking
+    let sessionId = localStorage.getItem('ebay-mod-session-id');
+    if (!sessionId) {
+      sessionId = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      localStorage.setItem('ebay-mod-session-id', sessionId);
+    }
+
+    const newInstance = {
+      index: trainingData.instanceCount,
+      postContent: postContent,
+      priority: priority,
+      userAction: userAction,
+      timestamp: new Date().toISOString(),
+      sessionId: sessionId
+    };
+
+    setTrainingData(prev => ({
+      instanceCount: prev.instanceCount + 1,
+      trainingInstances: [...prev.trainingInstances, newInstance]
+    }));
+
+    console.log(`Training data recorded - Instance #${trainingData.instanceCount} - Action: ${userAction}`);
+  };
+
+  // Export training data (simple download)
+  const exportTrainingData = () => {
+    const dataToExport = {
+      instanceCount: trainingData.instanceCount,
+      trainingInstances: trainingData.trainingInstances,
+      exportDate: new Date().toISOString(),
+      version: "2.0.0",
+      sessionId: localStorage.getItem('ebay-mod-session-id')
+    };
+
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `AI_assistant_training_data_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+
+    console.log(`Exported ${trainingData.instanceCount} training instances from this session`);
+  };
+
+  const getAiAccuracy = () => {
+    if (learningData.totalAnalyses === 0) return 0;
+    return Math.round((learningData.correctPredictions / learningData.totalAnalyses) * 100);
+  };
+
+  const testCases = [
+    {
+      name: 'Threat Detection',
+      content: "I'll beat you up if you outbid me again!",
+      priority: 'P1',
+      expected: 'Major violation, Ban action'
+    },
+    {
+      name: 'Personal Info',
+      content: "Please call me at 555-123-4567 about this item",
+      priority: 'P3',
+      expected: 'Moderate violation, Edit action'  
+    },
+    {
+      name: 'Off-topic Discussion',
+      content: "Has anyone tried the new iPhone? It's amazing!",
+      priority: 'P4',
+      expected: 'Minor violation, Steer action'
+    }
+  ];
+
+  // Webscraping function
+  const scrapeEbayPost = async (url) => {
+    if (!url.trim()) {
+      alert('Please enter a valid eBay community URL');
+      return;
+    }
+
+    // Check for Community Mentor Lounge posts - DO NOT MODERATE
+    if (url.includes('/Community-Mentor-Lounge/') || url.includes('mentor-lounge')) {
+      alert(`🚫 Community Mentor Lounge Post Detected!
+
+⚠️ DO NOT MODERATE! ⚠️
+
+Community Mentor Lounge posts are restricted access and should not be moderated through this tool.
+
+Please use a different eBay community post URL from public sections like:
+• Selling
+• Buying  
+• Returns
+• Payments
+• etc.`);
+      return;
+    }
+
+    setIsScrapingLoading(true);
+    try {
+      // First try to fetch directly (might be blocked by CORS)
+      let content = '';
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          content = await response.text();
+        }
+      } catch (corsError) {
+        // CORS blocked, try multiple proxy services
+        const proxies = [
+          `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+          `https://cors-anywhere.herokuapp.com/${url}`,
+          `https://thingproxy.freeboard.io/fetch/${url}`
+        ];
+
+        let proxyWorked = false;
+        for (const proxyUrl of proxies) {
+          try {
+            const proxyResponse = await fetch(proxyUrl);
+            if (proxyResponse.ok) {
+              const proxyData = await proxyResponse.json();
+              content = proxyData.contents || proxyData;
+              proxyWorked = true;
+              break;
+            }
+          } catch (proxyError) {
+            continue; // Try next proxy
+          }
+        }
+
+        if (!proxyWorked) {
+          // Enhanced manual input with better instructions
+          const userContent = prompt(`🚫 CORS Protection Active
+
+eBay blocks automated scraping for security. Please help by:
+
+1. Go to the eBay community post
+2. Select and copy the post content (Ctrl+A, then Ctrl+C)
+3. Paste it below:
+
+This includes: username, post title, date, and message content.`);
+          
+          if (!userContent) {
+            setIsScrapingLoading(false);
+            return;
+          }
+          content = userContent;
+        }
+      }
+
+      // Use AI to extract structured data from the content
+      if (aiSettings.apiKey && aiSettings.assistantId && aiSettings.isActive) {
+        const extractedData = await aiExtractPostData(content, url);
+        setScrapedData(extractedData);
+      } else {
+        // Fallback: simple regex/string parsing
+        const extractedData = parseEbayContent(content, url);
+        setScrapedData(extractedData);
+      }
+    } catch (error) {
+      console.error('Scraping error:', error);
+      alert(`Failed to scrape URL: ${error.message}`);
+    } finally {
+      setIsScrapingLoading(false);
+    }
+  };
+
+  // AI-powered extraction using OpenAI
+  const aiExtractPostData = async (content, url) => {
+    try {
+      const threadResponse = await fetch(`${aiSettings.baseUrl}/threads`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aiSettings.apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({})
+      });
+
+      const thread = await threadResponse.json();
+
+      const messagePayload = {
+        role: 'user',
+        content: `Extract the following information from this eBay community post content:
+
+URL: ${url}
+Content: ${content}
+
+Please return ONLY valid JSON in this exact format:
+{
+  "username": "extracted_username",
+  "title": "post_title", 
+  "datetime": "date_and_time",
+  "postContent": "main_post_text"
+}
+
+Extract the username of the person who made the post, the post title/subject, the date and time it was posted, and the main post content. If any field cannot be found, use an empty string.`
+      };
+
+      await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aiSettings.apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify(messagePayload)
+      });
+
+      const runResponse = await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/runs`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aiSettings.apiKey}`,
+          'Content-Type': 'application/json',
+          'OpenAI-Beta': 'assistants=v2'
+        },
+        body: JSON.stringify({
+          assistant_id: aiSettings.assistantId
+        })
+      });
+
+      const run = await runResponse.json();
+      const runStatus = await pollRunStatus(thread.id, run.id);
+      
+      if (runStatus.status === 'completed') {
+        const messagesResponse = await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/messages`, {
+          headers: {
+            'Authorization': `Bearer ${aiSettings.apiKey}`,
+            'OpenAI-Beta': 'assistants=v2'
+          }
+        });
+
+        const messages = await messagesResponse.json();
+        const assistantMessage = messages.data.find(msg => msg.role === 'assistant');
+        
+        if (assistantMessage) {
+          const extractedText = assistantMessage.content[0].text.value;
+          try {
+            return JSON.parse(extractedText);
+          } catch (e) {
+            // Fallback if AI doesn't return valid JSON
+            return parseEbayContent(content, url);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('AI extraction error:', error);
+    }
+    
+    // Fallback to manual parsing
+    return parseEbayContent(content, url);
+  };
+
+  // eBay-specific parsing function based on real community structure
+  const parseEbayContent = (content, url) => {
+    // eBay-specific patterns based on real post analysis from examples:
+    // Example 1: elfilin (Selling) - elfilin elfilin Adventurer (**12** _feedbacks_) ‎10-26-2025 11:30 PM
+    // Example 2: imop45 (Buying) - imop45 imop45 Adventurer (**80** _feedbacks_) ‎10-27-2025 10:13 AM
+    // Example 3: racingpatches_0 (Buying) - racingpatches_0 racingpatches_0 Rising Star (**87** _feedbacks_) ‎10-27-2025 06:40 AM
+    // Example 4: landtag (Buying) - landtag landtag Explorer (**59** _feedbacks_) ‎10-28-2025 09:44 AM
+    // Example 5: rusodis0 (Returns) - rusodis0 rusodis0 Adventurer (**18** _feedbacks_) ‎10-29-2025 03:55 AM
+    // Example 6: cinvmak1 (Motors) - cinvmak1 cinvmak1 Enthusiast (**8** _feedbacks_) ‎10-29-2025 06:40 AM
+    // Example 7: deep_rock_star (The Park) - "Duets by some of the greatest singers of all time" ‎10-28-2025 06:58 PM - edited ‎10-28-2025 07:43 PM
+    // Example 8: gregsju (Buying) - gregsju Rising Star "Wrong item sent" 10-29-2025 07:07 AM
+    // Example 9: xclusive_tradingcards (Selling) - "Ebay Selling Protection is a Joke!" ‎10-27-2025 01:48 PM - edited ‎10-27-2025 01:49 PM
+    // Also: house*of*paws (Visionary **777**), participatrophy (Thrill-Seeker **0**), wastingtime101 (Superstar **0**)
+    const patterns = {
+      // eBay username patterns - exact format from real posts (handles underscores, numbers, escapes, special chars)
+      username: [
+        // PRIMARY: username username Rank - comprehensive rank list from 6 examples + replies  
+        /\b([a-zA-Z0-9_.*-]+)\s+\1\s+(?:Adventurer|Visionary|Rockstar|Pioneer|Top Contributor|Newbie|Trailblazer|Superstar|Rising Star|Explorer|Thrill-Seeker|Enthusiast)/i,
+        // SECONDARY: escaped username format (racingpatches\_0, house*of*paws)
+        /\b([a-zA-Z0-9_.*\\-]+)\s+([a-zA-Z0-9_.*\\-]+)\s+(?:Adventurer|Visionary|Rockstar|Pioneer|Top Contributor|Newbie|Trailblazer|Superstar|Rising Star|Explorer|Thrill-Seeker|Enthusiast)/i,
+        // TERTIARY: username Rank (**count** _feedbacks_ - comprehensive rank support including zero feedback
+        /\b([a-zA-Z0-9_.*-]+)\s+(?:Adventurer|Visionary|Rockstar|Pioneer|Top Contributor|Newbie|Trailblazer|Superstar|Rising Star|Explorer|Thrill-Seeker|Enthusiast)\s+\(\*\*\d+\*\*\s+_feedbacks_/i,
+        // QUATERNARY: any username before feedback count (broader match)
+        /\b([a-zA-Z0-9_.*-]+)\s+.*?\(\*\*\d+\*\*\s+_feedbacks_\s+(?:star\s+level|\))/i,
+        // @mentions with escaped characters and special chars
+        /@([a-zA-Z0-9_.*\\-]+)/,
+        // Clean @mentions without escapes  
+        /@([a-zA-Z0-9_.*-]+)/
+      ],
+      
+      // eBay post title patterns - from real examples (handles ALL CAPS, mixed case, complex titles, returns issues)
+      title: [
+        // PRIMARY: eBay's ## markdown header format (handles ALL CAPS like "EBAY DO NOT ALLOW")
+        /##\s*([^\n\r]+?)\.?\s*$/m,
+        // SECONDARY: look for complete title line after "##" (broader match)
+        /##\s+([^#\n]+)/,
+        // TERTIARY: Title extraction from complex posts with colons/subtitles
+        /##\s+eBay[^:]*:\s*(.+)/i,
+        // QUATERNARY: ALL CAPS eBay-related titles
+        /##\s+(EBAY[^.\n]*)/i,
+        // QUINTERNARY: Emotional/personal posts (like "I am 81 and have been scammed")
+        /##\s+(I am \d+[^.\n]*)/i,
+        // SIXERNARY: Returns/refund related titles (like "Refund of the damaged item")
+        /##\s+(Refund[^.\n]*)/i,
+        // SEVENTHERNARY: Motors/service related titles (like "Looking for a selling assistant")
+        /##\s+(Looking for[^.\n]*)/i,
+        // EIGHTHERNARY: Technical/shipping issues (quotes in titles)
+        /##\s+([^.\n]*(?:printable|label|qr code|UPS|shipping)[^.\n]*)/i,
+        // NINTHERNARY: Entertainment/discussion posts (like "Duets by some of the greatest singers")
+        /##\s+(Duets[^.\n]*|[^.\n]*(?:singers|greatest|all time)[^.\n]*)/i,
+        // TENTHERNARY: Simple issue titles (like "Wrong item sent")
+        /##\s+(Wrong[^.\n]*|[^.\n]*(?:item sent|wrong item)[^.\n]*)/i,
+        // ELEVENTHERNARY: eBay system complaints (like "Ebay Selling Protection is a Joke!")
+        /##\s+(Ebay[^.\n]*(?:Protection|is a Joke)[^.\n]*)/i,
+        // FALLBACK: common eBay post keywords (expanded with complaints/system terms)
+        /(?:^|\n)\s*([^.\n]*(?:scammer|scammed|feedback|cancel|sale|positive|negative|buyer|seller|request|UNIUNI|delivery|allow|help|won\'t help|refund|damaged|return|broken|assistant|selling|protection|label|printable|duets|singers|greatest|wrong|item sent|joke|complaint)[^.\n]*)/im
+      ],
+      
+      // eBay datetime patterns - exact format from examples (includes edited timestamps)
+      datetime: [
+        // PRIMARY: eBay's exact format with special character ‎MM-DD-YYYY HH:MM AM/PM
+        /‎(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+        // SECONDARY: same format without invisible character 
+        /(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+        // TERTIARY: edited posts format (‎10-28-2025 06:58 PM - edited ‎10-28-2025 07:43 PM)
+        /‎(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))\s*-\s*edited\s*‎(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+        // QUATERNARY: edited posts without invisible character
+        /(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))\s*-\s*edited\s*(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+        // QUINTERNARY: month format (Oct-27-2025 10:13 AM)
+        /([A-Z][a-z]{2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+        // FALLBACK: various other formats
+        /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/
+      ]
+    };
+
+    const extractFirst = (patternArray) => {
+      for (const pattern of patternArray) {
+        const match = content.match(pattern);
+        if (match && match[1]) {
+          return match[1].trim();
+        }
+      }
+      return '';
+    };
+
+    // Extract data using eBay-specific patterns
+    let username = extractFirst(patterns.username);
+    let title = extractFirst(patterns.title);
+    let datetime = extractFirst(patterns.datetime);
+
+    // Clean up title - remove eBay branding and extra content
+    if (title) {
+      title = title
+        .replace(/[-|]*eBay Community.*$/i, '')
+        .replace(/^.*?Selling\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/^##\s*/, '')
+        .trim();
+    }
+
+    // Clean up username - handle escaped characters and keep valid eBay username characters
+    if (username) {
+      username = username
+        .replace(/\\/g, '') // Remove escape characters (\)
+        .replace(/[^a-zA-Z0-9_.*-]/g, '') // Keep valid username chars including asterisks
+        .replace(/^[_.*]+|[_.*]+$/g, ''); // Remove leading/trailing special chars
+    }
+
+    // Validate and return
+    return {
+      username: username.substring(0, 50) || '',
+      title: title.substring(0, 200) || '',
+      datetime: datetime.substring(0, 50) || '',
+      postContent: content.length > 500 ? content.substring(0, 500) + '...' : content
+    };
+  };
+
+  // Apply scraped data to specific template
+  const applyScrapedDataToTemplate = (templateId, scrapedData) => {
+    if (!scrapedData) {
+      alert('No data was scraped successfully.');
+      return;
+    }
+
+    const updates = {};
+    if (scrapedData.username) updates.username = scrapedData.username;
+    if (scrapedData.title) updates.title = scrapedData.title;
+    if (scrapedData.datetime) updates.datetime = scrapedData.datetime;
+
+    setTemplateInputs(prev => ({
+      ...prev,
+      [templateId]: { ...prev[templateId], ...updates }
+    }));
+
+    const templateName = templateList.find(t => t.id === templateId)?.name || 'template';
+    alert(`✅ Post info extracted and applied to ${templateName}!\n\nUsername: ${scrapedData.username || 'Not found'}\nTitle: ${scrapedData.title || 'Not found'}\nDate/Time: ${scrapedData.datetime || 'Not found'}`);
+  };
+
+  // Scrape and apply to specific template  
+  const scrapeForTemplate = async (url, templateId) => {
+    if (!url.trim()) {
+      alert('Please enter a valid eBay community URL');
+      return;
+    }
+
+    // Check for Community Mentor Lounge posts - DO NOT MODERATE
+    if (url.includes('/Community-Mentor-Lounge/') || url.includes('mentor-lounge')) {
+      alert(`🚫 Community Mentor Lounge Post Detected!
+
+⚠️ DO NOT MODERATE! ⚠️
+
+Community Mentor Lounge posts are restricted access and should not be moderated through this tool.
+
+Please use a different eBay community post URL from public sections like:
+• Selling
+• Buying  
+• Returns
+• Payments
+• etc.`);
+      return;
+    }
+
+    setIsScrapingLoading(true);
+    try {
+      // First try to fetch directly (might be blocked by CORS)
+      let content = '';
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          content = await response.text();
+        }
+      } catch (corsError) {
+        // CORS blocked, try multiple proxy services
+        const proxies = [
+          `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+          `https://cors-anywhere.herokuapp.com/${url}`,
+          `https://thingproxy.freeboard.io/fetch/${url}`
+        ];
+
+        let proxyWorked = false;
+        for (const proxyUrl of proxies) {
+          try {
+            const proxyResponse = await fetch(proxyUrl);
+            if (proxyResponse.ok) {
+              const proxyData = await proxyResponse.json();
+              content = proxyData.contents || proxyData;
+              proxyWorked = true;
+              break;
+            }
+          } catch (proxyError) {
+            continue; // Try next proxy
+          }
+        }
+
+        if (!proxyWorked) {
+          // Enhanced manual input with better instructions
+          const userContent = prompt(`🚫 CORS Protection Active
+
+eBay blocks automated scraping for security. Please help by:
+
+1. Go to the eBay community post
+2. Select and copy the post content (Ctrl+A, then Ctrl+C)
+3. Paste it below:
+
+This includes: username, post title, date, and message content.`);
+          
+          if (!userContent) {
+            setIsScrapingLoading(false);
+            return;
+          }
+          content = userContent;
+        }
+      }
+
+      // Use AI to extract structured data from the content
+      if (aiSettings.apiKey && aiSettings.assistantId && aiSettings.isActive) {
+        const extractedData = await aiExtractPostData(content, url);
+        applyScrapedDataToTemplate(templateId, extractedData);
+      } else {
+        // Fallback: simple regex/string parsing
+        const extractedData = parseEbayContent(content, url);
+        applyScrapedDataToTemplate(templateId, extractedData);
+      }
+    } catch (error) {
+      console.error('Scraping error:', error);
+      alert(`Failed to scrape URL: ${error.message}`);
+    } finally {
+      setIsScrapingLoading(false);
+    }
+  };
+
+  // Guidelines for dropdown
+  const guidelineOptions = [
+    { id: 'gg01', name: 'GG01: Be respectful', text: templates.gg01 },
+    { id: 'gg02', name: 'GG02: Meaningful contributions', text: templates.gg02 },
+    { id: 'gg03', name: 'GG03: Consequences', text: templates.gg03 },
+    { id: 'gg04', name: 'GG04: Reporting Content', text: templates.gg04 },
+    { id: 'gg05', name: 'GG05: Personal info', text: templates.gg05 },
+    { id: 'sg00', name: 'SG00: Refrain from', text: templates.sg00 },
+    { id: 'sg01', name: 'SG01: Adult content', text: templates.sg01 },
+    { id: 'sg02', name: 'SG02: Threats', text: templates.sg02 },
+    { id: 'sg03', name: 'SG03: Dishonest', text: templates.sg03 },
+    { id: 'sg04', name: 'SG04: Duplicative', text: templates.sg04 },
+    { id: 'sg05', name: 'SG05: Activism', text: templates.sg05 },
+    { id: 'sg06', name: 'SG06: Advertising', text: templates.sg06 },
+    { id: 'sg07', name: 'SG07: Off-eBay sites', text: templates.sg07 },
+    { id: 'sg08', name: 'SG08: Reposted content', text: templates.sg08 },
+    { id: 'sg09', name: 'SG09: Mod warnings', text: templates.sg09 },
+    { id: 'sg10', name: 'SG10: Naming/shaming', text: templates.sg10 },
+    { id: 'sg11', name: 'SG11: Policy violations', text: templates.sg11 },
+    { id: 'sg12', name: 'SG12: Copyright', text: templates.sg12 }
+  ];
+
+  const selectGuideline = (templateId, guidelineId) => {
+    if (guidelineId === 'other') {
+      // Clear the field and focus on the text input for custom entry
+      updateTemplateInput(templateId, 'guidelines', '');
+      // Small delay to ensure the input is cleared before focusing
+      setTimeout(() => {
+        const guidelinesInput = document.querySelector(`[data-template-id="${templateId}"][data-field="guidelines"]`);
+        if (guidelinesInput) {
+          guidelinesInput.focus();
+        }
+      }, 50);
+    } else {
+      const guideline = guidelineOptions.find(g => g.id === guidelineId);
+      if (guideline) {
+        updateTemplateInput(templateId, 'guidelines', guideline.text);
+      }
+    }
+  };
+
+  // Admin Notes specific function - populates with clean violation name only
+  const selectAdminNoteViolation = (guidelineId) => {
+    if (guidelineId === 'other') {
+      // Clear the field and focus on the text input for custom entry
+      updateAdminNoteInput('edited', 'violation', '');
+      setTimeout(() => {
+        const violationInput = document.querySelector('[data-admin-field="violation"]');
+        if (violationInput) {
+          violationInput.focus();
+        }
+      }, 50);
+    } else {
+      const guideline = guidelineOptions.find(g => g.id === guidelineId);
+      if (guideline) {
+        // Extract clean name from "GG01: Be respectful" -> "Be respectful"
+        const cleanName = guideline.name.replace(/^[SG]+\d+:\s*/, '');
+        updateAdminNoteInput('edited', 'violation', cleanName);
+      }
+    }
+  };
+
   // Load data from localStorage on mount
   useEffect(() => {
     try {
@@ -48,11 +787,19 @@ const ModerationTool = () => {
       const savedTemplateInputs = localStorage.getItem('ebay-mod-template-inputs');
       const savedAdminNotes = localStorage.getItem('ebay-mod-admin-notes');
       const savedDarkMode = localStorage.getItem('ebay-mod-dark-mode');
+      const savedAiSettings = localStorage.getItem('ebay-mod-ai-settings');
+      const savedAiHistory = localStorage.getItem('ebay-mod-ai-history');
+      const savedLearningData = localStorage.getItem('ebay-mod-learning-data');
+      const savedTrainingData = localStorage.getItem('ebay-mod-training-data');
       
       if (savedCounters) setCounters(JSON.parse(savedCounters));
       if (savedTemplateInputs) setTemplateInputs(JSON.parse(savedTemplateInputs));
       if (savedAdminNotes) setAdminNoteInputs(JSON.parse(savedAdminNotes));
       if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+      if (savedAiSettings) setAiSettings(JSON.parse(savedAiSettings));
+      if (savedAiHistory) setAiHistory(JSON.parse(savedAiHistory));
+      if (savedLearningData) setLearningData(JSON.parse(savedLearningData));
+      if (savedTrainingData) setTrainingData(JSON.parse(savedTrainingData));
     } catch (error) {
       console.error('Error loading saved data:', error);
     }
@@ -94,6 +841,42 @@ const ModerationTool = () => {
     }
   }, [darkMode]);
 
+  // Save AI settings to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ebay-mod-ai-settings', JSON.stringify(aiSettings));
+    } catch (error) {
+      console.error('Error saving AI settings:', error);
+    }
+  }, [aiSettings]);
+
+  // Save AI history to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ebay-mod-ai-history', JSON.stringify(aiHistory));
+    } catch (error) {
+      console.error('Error saving AI history:', error);
+    }
+  }, [aiHistory]);
+
+  // Save learning data to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ebay-mod-learning-data', JSON.stringify(learningData));
+    } catch (error) {
+      console.error('Error saving learning data:', error);
+    }
+  }, [learningData]);
+
+  // Save training data to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('ebay-mod-training-data', JSON.stringify(trainingData));
+    } catch (error) {
+      console.error('Error saving training data:', error);
+    }
+  }, [trainingData]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (openDropdown && dropdownRefs.current[openDropdown]) {
@@ -105,6 +888,38 @@ const ModerationTool = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openDropdown]);
+
+  // Admin keyboard shortcuts for training data access
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Ctrl+Shift+T = Export Training Data (admin only)
+      if (event.ctrlKey && event.shiftKey && event.key === 'T') {
+        event.preventDefault();
+        exportTrainingData();
+        console.log('Training data exported. Current instance count:', trainingData.instanceCount);
+      }
+      // Ctrl+Shift+C = Log training data to console (admin only)
+      if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+        event.preventDefault();
+        console.log('AI Training Data:', trainingData);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [trainingData]);
+
+  // Expose training data functions to console for admin access
+  useEffect(() => {
+    window.adminTools = {
+      exportTrainingData,
+      getTrainingData: () => trainingData,
+      getInstanceCount: () => trainingData.instanceCount,
+      clearTrainingData: () => setTrainingData({ instanceCount: 0, trainingInstances: [] }),
+      // Note: Server files are available if you want to implement server-side collection later
+      serverInfo: "Server implementation available in server.js - currently using simple localStorage approach"
+    };
+  }, [trainingData]);
 
   const templates = {
     friendlyRemovedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post "[TITLE]" from [DATE_TIME] has been removed because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYou posted the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
@@ -173,7 +988,10 @@ const ModerationTool = () => {
     { id: 'offTopic', name: 'Steering: Off Topic', content: templates.offTopic },
     { id: 'bullying', name: 'Bullying Reply', content: templates.bullying },
     { id: 'giftCardScam', name: 'Gift Card Scam Reply', content: templates.giftCardScam },
-    { id: 'csRedirect', name: 'PM: CS Redirect', content: templates.csRedirect, isDynamic: true, type: 'username' },
+    { id: 'csRedirect', name: 'PM: CS Redirect', content: templates.csRedirect, isDynamic: true, type: 'username' }
+  ];
+
+  const guidelinesList = [
     { id: 'gg01', name: 'GG01: Be respectful', content: templates.gg01 },
     { id: 'gg02', name: 'GG02: Meaningful contributions', content: templates.gg02 },
     { id: 'gg03', name: 'GG03: Consequences', content: templates.gg03 },
@@ -205,20 +1023,29 @@ const ModerationTool = () => {
   };
 
   const updateTemplateInput = (templateId, field, value) => {
-    setTemplateInputs(prev => ({
-      ...prev,
-      [templateId]: { ...prev[templateId], [field]: value }
-    }));
+    setTemplateInputs(prev => {
+      const updates = { [field]: value };
+      
+      // Auto-populate "here" field with URL for edited post templates
+      if (field === 'url' && value && (templateId === 'friendlyEditedPost' || templateId === 'warningEditedPost')) {
+        updates.here = value;
+      }
+      
+      return {
+        ...prev,
+        [templateId]: { ...prev[templateId], ...updates }
+      };
+    });
   };
 
   const clearTemplateInputs = (templateId) => {
     const defaults = {
-      friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-      warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-      friendlyEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-      warningEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-      csRedirect: { username: '' },
-      banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+      friendlyRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+      warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+      friendlyEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+      warningEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+      csRedirect: { url: '', username: '' },
+      banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
     };
     if (defaults[templateId]) {
       setTemplateInputs(prev => ({ ...prev, [templateId]: defaults[templateId] }));
@@ -457,7 +1284,26 @@ const ModerationTool = () => {
           )
         )
       ),
-      h('div', { className: 'space-y-4 mb-6' },
+      // Moderation Processes and Workflows Section
+      h('div', { className: `${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}` },
+        h('button', { 
+          onClick: () => setShowWorkflows(!showWorkflows),
+          className: 'w-full flex items-center justify-between mb-3'
+        },
+          h('div', { className: 'flex items-center gap-3' },
+            h('div', { className: 'w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center' },
+              h('svg', { className: 'w-6 h-6 text-white', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                h('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 2, d: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' })
+              )
+            ),
+            h('h3', { className: `font-bold text-lg ${textPrimary}` }, 'Moderation Processes and Workflows')
+          ),
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: `text-sm ${textSecondary}` }, showWorkflows ? 'Hide' : 'Show'),
+            showWorkflows ? h(ChevronUp, { className: `w-5 h-5 ${textSecondary}` }) : h(ChevronDown, { className: `w-5 h-5 ${textSecondary}` })
+          )
+        ),
+        showWorkflows && h('div', { className: 'space-y-4 mt-4' },
         moderationActions.map((action) => {
           const isActive = activeAction === action.id;
           return h('div', { 
@@ -489,6 +1335,66 @@ const ModerationTool = () => {
             )
           );
         })
+        )
+      ),
+      // AI Moderation Assistant Section
+      h('div', { className: `${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}` },
+        h('div', { className: 'flex items-center justify-between mb-4' },
+          h('div', { className: 'flex items-center gap-3' },
+            h('div', { className: 'w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center' },
+              h('svg', { className: 'w-6 h-6 text-white', fill: 'none', stroke: 'currentColor', viewBox: '0 0 24 24' },
+                h('path', { strokeLinecap: 'round', strokeLinejoin: 'round', strokeWidth: 2, d: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' })
+              )
+            ),
+            h('div', null,
+              h('h3', { className: `font-bold text-lg ${textPrimary}` }, 'AI Moderation Assistant'),
+              h('p', { className: `text-sm ${textSecondary}` }, 'Advanced moderation tools and automation for eBay community management')
+            )
+          )
+        ),
+
+
+        // AI History Panel (hidden from users, kept for development)
+        false && showAIHistory && h('div', { className: `mb-4 p-4 rounded-lg border-2 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-green-50 border-green-200'}` },
+          h('div', { className: 'flex items-center justify-between mb-3' },
+            h('h4', { className: `font-semibold ${textPrimary}` }, `AI Analysis History (${aiHistory.length})`),
+            h('div', { className: `text-sm ${textSecondary}` }, `${getAiAccuracy()}% Accuracy`)
+          ),
+          aiHistory.length === 0 
+            ? h('p', { className: `text-sm ${textSecondary} text-center py-4` }, 'No AI analyses yet. Run some tests to see history here.')
+            : h('div', { className: 'space-y-2 max-h-96 overflow-y-auto' },
+                aiHistory.slice(0, 10).map(record => 
+                  h('div', { 
+                    key: record.id,
+                    className: `p-3 rounded border ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`
+                  },
+                    h('div', { className: 'flex items-center justify-between mb-2' },
+                      h('div', { className: 'flex items-center gap-2' },
+                        h('span', { className: `px-2 py-1 text-xs rounded font-medium ${record.priority === 'P1' ? 'bg-red-100 text-red-700' : record.priority === 'P2' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}` }, record.priority),
+                        h('span', { className: record.analysis.sentiment }, record.analysis.sentiment),
+                        record.isCorrect !== null && (record.isCorrect 
+                          ? h('span', { className: 'text-green-600 text-sm' }, '✅')
+                          : h('span', { className: 'text-yellow-600 text-sm' }, '🔄'))
+                      ),
+                      h('span', { className: `text-xs ${textSecondary}` }, new Date(record.timestamp).toLocaleTimeString())
+                    ),
+                    h('p', { className: `text-sm ${textSecondary} mb-2` }, `"${record.content.slice(0, 60)}${record.content.length > 60 ? '...' : ''}"`),
+                    h('div', { className: 'flex items-center justify-between text-xs' },
+                      h('span', { className: `font-medium ${record.analysis.action === 'Ban' ? 'text-red-600' : record.analysis.action === 'NAR' ? 'text-green-600' : 'text-blue-600'}` }, 
+                        `${record.analysis.violation} → ${record.analysis.action}`
+                      ),
+                      record.userOverride && h('span', { className: 'text-yellow-600' }, `Override: ${record.userOverride}`)
+                    )
+                  )
+                )
+              )
+        ),
+
+
+        // Main AI Assistant Interface (hidden from users - dev only)
+        false && showAIAssistant && h('div', { className: `p-4 rounded-lg border-2 ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-purple-50 border-purple-200'}` },
+          h('p', { className: `text-center ${textSecondary}` }, 'AI Assistant interface hidden for production use')
+        )
       ),
       h('div', { className: `${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}` },
         h('button', { 
@@ -515,6 +1421,24 @@ const ModerationTool = () => {
               },
                 copiedId === 'banCombined' ? h(React.Fragment, null, h(Check, { className: 'w-4 h-4' }), 'Copied') : h(React.Fragment, null, h(Copy, { className: 'w-4 h-4' }), 'Copy')
               )
+            )
+          ),
+          // URL scraping section for ban template
+          h('div', { className: `${darkMode ? 'bg-slate-800 border-slate-600' : 'bg-orange-50 border-orange-200'} border-2 p-3 m-3 rounded` },
+            h('div', { className: `text-xs font-semibold mb-2 ${textSecondary}` }, '🕷️ Extract Post Info (Optional)'),
+            h('div', { className: 'flex gap-2' },
+              h('input', {
+                type: 'url',
+                placeholder: 'eBay community post URL...',
+                value: templateInputs.banCombined?.url || '',
+                onChange: (e) => updateTemplateInput('banCombined', 'url', e.target.value),
+                className: `flex-1 px-3 py-2 text-xs border rounded ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'bg-white border-slate-300'}`
+              }),
+              h('button', {
+                onClick: () => scrapeForTemplate(templateInputs.banCombined?.url || '', 'banCombined'),
+                disabled: isScrapingLoading || !templateInputs.banCombined?.url?.trim(),
+                className: `px-3 py-2 text-xs font-medium rounded ${isScrapingLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'} text-white disabled:opacity-50`
+              }, isScrapingLoading ? 'Extracting...' : 'Extract Post Info')
             )
           ),
           h('div', { className: `${darkMode ? 'bg-slate-900' : 'bg-orange-50'} p-3 space-y-2` },
@@ -633,6 +1557,24 @@ const ModerationTool = () => {
                         className: `px-3 py-1 rounded text-xs font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-300 hover:bg-slate-400 text-slate-700'}`
                       }, 'Clear')
                     ),
+                    // URL scraping section for each template
+                    h('div', { className: `p-3 rounded border-2 ${darkMode ? 'bg-slate-800 border-slate-600' : 'bg-orange-50 border-orange-200'} mb-3` },
+                      h('div', { className: `text-xs font-semibold mb-2 ${textSecondary}` }, '🕷️ Extract Post Info (Optional)'),
+                      h('div', { className: 'flex gap-2' },
+                        h('input', {
+                          type: 'url',
+                          placeholder: 'eBay community post URL...',
+                          value: templateInputs[template.id]?.url || '',
+                          onChange: (e) => updateTemplateInput(template.id, 'url', e.target.value),
+                          className: `flex-1 px-3 py-2 text-xs border rounded ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'bg-white border-slate-300'}`
+                        }),
+                        h('button', {
+                          onClick: () => scrapeForTemplate(templateInputs[template.id]?.url || '', template.id),
+                          disabled: isScrapingLoading || !templateInputs[template.id]?.url?.trim(),
+                          className: `px-3 py-2 text-xs font-medium rounded ${isScrapingLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'} text-white disabled:opacity-50`
+                        }, isScrapingLoading ? 'Extracting...' : 'Extract Post Info')
+                      )
+                    ),
                     h('input', { 
                       type: 'text',
                       placeholder: 'USERNAME',
@@ -664,13 +1606,48 @@ const ModerationTool = () => {
                       className: `w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`
                     }),
                     template.type !== 'username' && h(React.Fragment, null,
+                      h('div', { className: 'space-y-2' },
+                        h('div', { className: 'flex gap-2' },
+                          h('select', {
+                            onChange: (e) => {
+                              if (e.target.value) {
+                                selectGuideline(template.id, e.target.value);
+                                e.target.value = ''; // Reset dropdown after selection
+                              }
+                            },
+                            defaultValue: '',
+                            className: `flex-1 px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`
+                          },
+                            h('option', { value: '' }, 'Select Violated Guideline...'),
+                            h('optgroup', { label: 'General Guidelines' },
+                              guidelineOptions.filter(g => g.id.startsWith('gg')).map(guideline =>
+                                h('option', { key: guideline.id, value: guideline.id }, guideline.name)
+                              )
+                            ),
+                            h('optgroup', { label: 'Specific Guidelines' },
+                              guidelineOptions.filter(g => g.id.startsWith('sg')).map(guideline =>
+                                h('option', { key: guideline.id, value: guideline.id }, guideline.name)
+                              )
+                            ),
+                            h('optgroup', { label: 'Custom' },
+                              h('option', { value: 'other' }, '✏️ Other (type custom violation)')
+                            )
+                          ),
+                          h('button', {
+                            onClick: () => updateTemplateInput(template.id, 'guidelines', ''),
+                            className: `px-3 py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`
+                          }, 'Clear')
+                        ),
                       h('input', { 
                         type: 'text',
-                        placeholder: 'GUIDELINES',
+                          placeholder: 'GUIDELINES (select from dropdown or type custom violation)',
                         value: templateInputs[template.id]?.guidelines || '',
                         onChange: (e) => updateTemplateInput(template.id, 'guidelines', e.target.value),
+                          'data-template-id': template.id,
+                          'data-field': 'guidelines',
                         className: `w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`
-                      }),
+                        })
+                      ),
                       h('textarea', { 
                         placeholder: 'QUOTE',
                         value: templateInputs[template.id]?.quote || '',
@@ -683,6 +1660,62 @@ const ModerationTool = () => {
                   h('div', { className: `${cardBg} p-3` },
                     h('pre', { className: `text-xs ${textSecondary} whitespace-pre-wrap font-mono` }, populatedContent)
                   )
+                )
+              );
+            })
+          )
+        )
+      ),
+      // Guidelines Section
+      h('div', { className: `${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}` },
+        h('button', { 
+          onClick: () => setShowGuidelines(!showGuidelines),
+          className: 'w-full flex items-center justify-between mb-3'
+        },
+          h('h3', { className: `font-semibold ${textPrimary}` }, 'Guidelines'),
+          h('div', { className: 'flex items-center gap-2' },
+            h('span', { className: `text-sm ${textSecondary}` }, showGuidelines ? 'Hide' : 'Show'),
+            showGuidelines ? h(ChevronUp, { className: `w-5 h-5 ${textSecondary}` }) : h(ChevronDown, { className: `w-5 h-5 ${textSecondary}` })
+          )
+        ),
+        showGuidelines && h(React.Fragment, null,
+          h('div', { className: 'mb-3' },
+            h('input', { 
+              type: 'text',
+              placeholder: 'Search guidelines...',
+              value: guidelinesSearch,
+              onChange: (e) => setGuidelinesSearch(e.target.value),
+              className: `w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`
+            })
+          ),
+          h('div', { className: 'space-y-2' },
+            guidelinesList.filter(guideline => 
+              guideline.name.toLowerCase().includes(guidelinesSearch.toLowerCase())
+            ).map((guideline) => {
+              const isExpanded = expandedGuidelines[guideline.id];
+              return h('div', { 
+                key: guideline.id, 
+                className: `border rounded-lg overflow-hidden ${borderColor}`
+              },
+                h('div', { className: `${darkMode ? 'bg-slate-700' : 'bg-slate-100'} px-3 py-2 flex items-center justify-between border-b ${borderColor}` },
+                  h('span', { className: `text-sm font-semibold ${textPrimary}` }, guideline.name),
+                  h('div', { className: 'flex gap-2' },
+                    h('button', { 
+                      onClick: () => copyToClipboard(guideline.content, guideline.id),
+                      className: 'flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium'
+                    },
+                      copiedId === guideline.id ? h(React.Fragment, null, h(Check, { className: 'w-4 h-4' }), 'Copied') : h(React.Fragment, null, h(Copy, { className: 'w-4 h-4' }), 'Copy')
+                    ),
+                    h('button', { 
+                      onClick: () => setExpandedGuidelines({...expandedGuidelines, [guideline.id]: !isExpanded}),
+                      className: `flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`
+                    },
+                      isExpanded ? h(React.Fragment, null, h(ChevronUp, { className: 'w-4 h-4' }), 'Hide') : h(React.Fragment, null, h(ChevronDown, { className: 'w-4 h-4' }), 'Show')
+                    )
+                  )
+                ),
+                isExpanded && h('div', { className: `${cardBg} p-3` },
+                  h('pre', { className: `text-xs ${textSecondary} whitespace-pre-wrap font-mono` }, guideline.content)
                 )
               );
             })
@@ -723,13 +1756,47 @@ const ModerationTool = () => {
             onChange: (e) => updateAdminNoteInput('edited', 'removed', e.target.value),
             className: `w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`
           }),
-          h('input', { 
-            type: 'text',
-            placeholder: 'Rule violation',
-            value: adminNoteInputs.edited.violation,
-            onChange: (e) => updateAdminNoteInput('edited', 'violation', e.target.value),
-            className: `w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`
-          }),
+          h('div', { className: 'space-y-2' },
+            h('div', { className: 'flex gap-2' },
+              h('select', {
+                onChange: (e) => {
+                  if (e.target.value) {
+                    selectAdminNoteViolation(e.target.value);
+                    e.target.value = ''; // Reset dropdown after selection
+                  }
+                },
+                defaultValue: '',
+                className: `flex-1 px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`
+              },
+                h('option', { value: '' }, 'Select Violated Guideline...'),
+                h('optgroup', { label: 'General Guidelines' },
+                  guidelineOptions.filter(g => g.id.startsWith('gg')).map(guideline =>
+                    h('option', { key: guideline.id, value: guideline.id }, guideline.name)
+                  )
+                ),
+                h('optgroup', { label: 'Specific Guidelines' },
+                  guidelineOptions.filter(g => g.id.startsWith('sg')).map(guideline =>
+                    h('option', { key: guideline.id, value: guideline.id }, guideline.name)
+                  )
+                ),
+                h('optgroup', { label: 'Custom' },
+                  h('option', { value: 'other' }, '✏️ Other (type custom violation)')
+                )
+              ),
+              h('button', {
+                onClick: () => updateAdminNoteInput('edited', 'violation', ''),
+                className: `px-3 py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`
+              }, 'Clear')
+            ),
+            h('input', { 
+              type: 'text',
+              placeholder: 'Rule violation (select from dropdown or type custom)',
+              value: adminNoteInputs.edited.violation,
+              onChange: (e) => updateAdminNoteInput('edited', 'violation', e.target.value),
+              'data-admin-field': 'violation',
+              className: `w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`
+            })
+          ),
           h('div', { className: `rounded-lg p-3 border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}` },
             h('pre', { className: `text-xs whitespace-pre-wrap font-mono ${textSecondary}` }, getPopulatedAdminNote('edited'))
           )
@@ -767,8 +1834,8 @@ const ModerationTool = () => {
         )
       ),
       h('div', { className: `rounded-lg shadow p-4 text-center text-sm ${cardBg} ${textSecondary} border ${borderColor}` },
-        h('p', null, 'Contact: ', h('a', { href: 'mailto:tuna.yilmaz@ignitetech.ai', className: 'text-blue-600 underline' }, 'tuna.yilmaz@ignitetech.ai'), ' or ', h('a', { href: 'mailto:c-tuna.yilmaz@khoros.com', className: 'text-blue-600 underline' }, 'c-tuna.yilmaz@khoros.com')),
-        h('p', { className: 'mt-2 text-xs' }, 'Version: 1.2.1')
+        h('p', null, 'Contact: ', h('a', { href: 'mailto:tuna.yilmaz@ignitetech.ai', className: 'text-blue-600 underline' }, 'tuna.yilmaz@ignitetech.ai'), ', ', h('a', { href: 'mailto:c-tuna.yilmaz@khoros.com', className: 'text-blue-600 underline' }, 'c-tuna.yilmaz@khoros.com'), ', ', h('a', { href: 'mailto:lightattah@ignitetech.com', className: 'text-blue-600 underline' }, 'lightattah@ignitetech.com'), ' or ', h('a', { href: 'mailto:c-light.attah@khoros.com', className: 'text-blue-600 underline' }, 'c-light.attah@khoros.com')),
+        h('p', { className: 'mt-2 text-xs' }, 'Version 2.0.0')
       )
     )
   );

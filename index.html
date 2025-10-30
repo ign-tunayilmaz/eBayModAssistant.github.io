@@ -64,17 +64,86 @@
             </svg>
         );
 
+        // Additional icons for AI features
+        const Download = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+        );
+
+        const Sparkles = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+        );
+
+        const Trash2 = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+        );
+
+        const ServerCog = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        );
+
+        const Wifi = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+            </svg>
+        );
+
+        const WifiOff = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.25 6.75L22.5 12l-5.25 5.25m0-10.5L12 12.75l5.25 5.25M1.5 12l5.25-5.25L12 12.75" />
+            </svg>
+        );
+
         const ModerationTool = () => {
             // State for collapsed menus (all false by default)
             const [showAdditionalTemplates, setShowAdditionalTemplates] = useState(false);
             const [showBanTemplates, setShowBanTemplates] = useState(false);
+            const [showGuidelines, setShowGuidelines] = useState(false);
+            const [showWorkflows, setShowWorkflows] = useState(false);
             const [showAdminNotes, setShowAdminNotes] = useState(false);
             const [showFAQ, setShowFAQ] = useState(false);
+            const [showAI, setShowAI] = useState(false);
+            const [expandedGuidelines, setExpandedGuidelines] = useState({});
+            const [guidelinesSearch, setGuidelinesSearch] = useState('');
+
+            // Webscraping state (for integrated template scraping)
+            const [isScrapingLoading, setIsScrapingLoading] = useState(false);
+
+            // Training data collection state
+            const [trainingData, setTrainingData] = useState({
+                instanceCount: 0,
+                trainingInstances: []
+            });
             const [darkMode, setDarkMode] = useState(false);
             const [activeAction, setActiveAction] = useState(null);
             const [expandedTemplates, setExpandedTemplates] = useState({});
             const [expandedFAQ, setExpandedFAQ] = useState({});
             const [templateSearch, setTemplateSearch] = useState('');
+            
+            // AI Assistant state
+            const [apiBase, setApiBase] = useState("");
+            const [apiKey, setApiKey] = useState("");
+            const [goLive, setGoLive] = useState(false);
+            const [liveStatus, setLiveStatus] = useState("offline");
+            const [aiPost, setAiPost] = useState("");
+            const [aiPriority, setAiPriority] = useState("P3");
+            const [aiSuggestion, setAiSuggestion] = useState(null);
+            const [aiFinalAction, setAiFinalAction] = useState("");
+            const [aiSaved, setAiSaved] = useState([]);
+            const [busySuggest, setBusySuggest] = useState(false);
+            const [errorSuggest, setErrorSuggest] = useState("");
+            const [groundTruthNotes, setGroundTruthNotes] = useState([]);
+            const [manPriority, setManPriority] = useState("P4");
+            const [manAction, setManAction] = useState("NAR");
+            const [aiActiveTab, setAiActiveTab] = useState("queue");
             
             // Counter state
             const [counters, setCounters] = useState({
@@ -85,12 +154,12 @@
             });
 
             const [templateInputs, setTemplateInputs] = useState({
-                friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                friendlyEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-                warningEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-                csRedirect: { username: '' },
-                banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+                friendlyRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+                warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+                friendlyEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+                warningEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+                csRedirect: { url: '', username: '' },
+                banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
             });
 
             const [adminNoteInputs, setAdminNoteInputs] = useState({
@@ -104,6 +173,283 @@
             const dropdownRefs = useRef({});
 
             const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
+
+            // AI constants
+            const AI_SENTIMENTS = ["🙂", "😐", "😡"];
+            const AI_PRIORITIES = ["P1", "P2", "P3", "P4", "P5"];
+            const AI_ACTIONS = ["NAR", "Steer", "Edit", "Archive", "Ban", "Lock"];
+            const VIOLATION_LEVELS = ["None", "Minor", "Moderate", "Major"];
+            const BAN_LENGTHS = ["None", "1d", "3d", "7d", "30d", "Indefinite"];
+
+            // AI utility functions
+            const uid = () => (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
+
+            const localSuggest = (post, priority) => {
+                const lowered = (post || "").toLowerCase();
+                const original = post || "";
+                let violation = "None";
+                let action = "NAR";
+                let sentiment = "🙂";
+                let ban_length = "None";
+                let rationale = "Post appears to comply with community guidelines.";
+                let message_to_user = "";
+
+                // MAJOR violations (Ban/Remove)
+                if (/(kill|murder|hurt|beat you up|violence|assault|attack you)/.test(lowered)) {
+                    violation = "Major"; action = "Ban"; sentiment = "😡"; ban_length = "7d";
+                    rationale = "Direct threats of violence or harm detected. This violates eBay's zero-tolerance policy on threats.";
+                    message_to_user = "Your post contained threats of violence, which strictly violate our community guidelines. This behavior is not tolerated.";
+                } else if (/(fuck|shit|bitch|asshole|damn you|go to hell)/.test(lowered) && !(/\*/.test(original))) {
+                    violation = "Major"; action = "Ban"; sentiment = "😡"; ban_length = "1d";
+                    rationale = "Severe profanity and abusive language directed at community members.";
+                    message_to_user = "Your post contained severe inappropriate language that creates a hostile environment.";
+                } else if (/(scam|fraud|steal|cheat|ripoff).*(ebay|seller|buyer)/.test(lowered)) {
+                    violation = "Major"; action = "Remove"; sentiment = "😡";
+                    rationale = "Accusations of fraud/scamming without evidence can be defamatory and harmful.";
+                    message_to_user = "Please contact eBay directly for transaction disputes rather than making public accusations.";
+                
+                // MODERATE violations (Edit/Steer)
+                } else if (/(phone|call me|\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\+\d{10,})/.test(lowered)) {
+                    violation = "Moderate"; action = "Edit"; sentiment = "😐";
+                    rationale = "Personal contact information (phone number) shared publicly violates privacy guidelines.";
+                    message_to_user = "We removed your phone number from the post. Please use eBay's messaging system for contact.";
+                } else if (/(email|gmail|yahoo|hotmail|@\w+\.\w+)/.test(lowered)) {
+                    violation = "Moderate"; action = "Edit"; sentiment = "😐";
+                    rationale = "Email addresses should not be shared publicly on the community.";
+                    message_to_user = "We removed your email address. Please use eBay's private messaging system for contact.";
+                } else if (/(mods? suck|ebay sucks|corrupt|useless|incompetent)/.test(lowered)) {
+                    violation = "Moderate"; action = "Edit"; sentiment = "😡";
+                    rationale = "Hostile language towards eBay staff/moderators disrupts community atmosphere.";
+                    message_to_user = "We edited your post to remove hostile language. Please keep feedback constructive and respectful.";
+                } else if (/\*+bleep\*+|\*{2,}|f\*\*k|s\*\*t/.test(original)) {
+                    violation = "Moderate"; action = "Edit"; sentiment = "😡";
+                    rationale = "Profanity (even censored) should be edited to maintain professional discussion.";
+                    message_to_user = "We edited your post to remove inappropriate language to keep discussions civil.";
+                } else if (/(stupid|idiot|moron|dumb|retard)/.test(lowered)) {
+                    violation = "Moderate"; action = "Edit"; sentiment = "😡";
+                    rationale = "Personal attacks and name-calling degrade community discussion quality.";
+                    message_to_user = "We edited your post to remove personal attacks. Please focus on the topic, not the person.";
+
+                // MINOR violations (Steer/Lock)
+                } else if (/(http|www\.|\.com|check out my|buy from me|visit my store)/.test(lowered)) {
+                    violation = "Minor"; action = "Steer"; sentiment = "😐";
+                    rationale = "Promotional content or external links detected. Community is for discussion, not advertising.";
+                    message_to_user = "Please avoid promotional content in community discussions. Focus on helping other members.";
+                } else if (/(off.?topic|this is stupid|waste of time|who cares)/.test(lowered)) {
+                    violation = "Minor"; action = "Steer"; sentiment = "😐";
+                    rationale = "Post appears to be off-topic or non-contributory to the discussion.";
+                    message_to_user = "Please keep discussions on-topic and constructive to help other community members.";
+                } else if (/(arguing|heated|fight|flame war|getting personal)/.test(lowered)) {
+                    violation = "Minor"; action = "Lock"; sentiment = "😐";
+                    rationale = "Discussion shows signs of becoming heated or argumentative.";
+                    message_to_user = "This discussion is being locked to prevent it from becoming unproductive.";
+                } else if (/(duplicate|already asked|spam|repeat)/.test(lowered) && post.length < 50) {
+                    violation = "Minor"; action = "Remove"; sentiment = "😐";
+                    rationale = "Appears to be duplicate or low-effort content.";
+                    message_to_user = "Please search existing discussions before posting to avoid duplicates.";
+
+                // SPECIAL CASES
+                } else if (/(help|question|how to|can someone|please)/.test(lowered) && post.length > 20) {
+                    violation = "None"; action = "NAR"; sentiment = "🙂";
+                    rationale = "Legitimate help-seeking post that contributes to community knowledge sharing.";
+                } else if (/(thank|thanks|solved|helpful|appreciate)/.test(lowered)) {
+                    violation = "None"; action = "NAR"; sentiment = "🙂";
+                    rationale = "Positive community interaction showing gratitude and engagement.";
+                } else if (post.length < 10) {
+                    violation = "Minor"; action = "Steer"; sentiment = "😐";
+                    rationale = "Very short post may not provide sufficient context or value.";
+                    message_to_user = "Please provide more detail in your posts to help other community members.";
+                }
+
+                // Priority-based adjustments
+                if (priority === "P1") {
+                    if (violation === "None") {
+                        violation = "Minor"; 
+                        rationale = "Flagged as P1 (abuse report) - requires careful review even if no obvious violation detected.";
+                    } else {
+                        rationale += " HIGH PRIORITY: Flagged as P1 abuse report requiring immediate attention.";
+                    }
+                } else if (priority === "P2" && violation !== "None") {
+                    rationale += " Moderate priority flag - likely repeat offender or escalated issue.";
+                }
+
+                // Handle empty/very short posts
+                if (!post.trim()) {
+                    violation = "Minor"; action = "Remove"; sentiment = "😐";
+                    rationale = "Empty post provides no value to community discussion.";
+                    message_to_user = "Empty posts are automatically removed to maintain discussion quality.";
+                }
+
+                return { violation, action, sentiment, rationale, ban_length, message_to_user, admin_note: "Enhanced local AI analysis" };
+            };
+
+            const callModerationAPI = async ({ baseUrl, apiKey, post_text, priority }) => {
+                // OpenAI Assistant API integration
+                const assistantId = localStorage.getItem('ebay-mod-assistant-id') || '';
+                
+                if (!assistantId) {
+                    throw new Error("Assistant ID not configured. Please set up your OpenAI Assistant first.");
+                }
+
+                // Create a thread for this moderation request
+                const threadRes = await fetch(`${baseUrl}/threads`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`,
+                        "OpenAI-Beta": "assistants=v2"
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                if (!threadRes.ok) throw new Error(`Thread creation failed: ${threadRes.status}`);
+                const thread = await threadRes.json();
+
+                // Add message to thread
+                const messageRes = await fetch(`${baseUrl}/threads/${thread.id}/messages`, {
+                    method: "POST", 
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${apiKey}`,
+                        "OpenAI-Beta": "assistants=v2"
+                    },
+                    body: JSON.stringify({
+                        role: "user",
+                        content: `Please analyze this eBay Community post for moderation:\n\nPost: "${post_text}"\nPriority: ${priority}\n\n${(() => {
+                            // Include learning context if available
+                            const learningData = analyzeLearningPatterns();
+                            let context = "";
+                            
+                            if (learningData && aiSaved.length >= 3) {
+                                context += `\nLearning Context:\n- Current accuracy: ${100 - learningData.overrideRate}%\n`;
+                                
+                                if (Object.keys(learningData.commonOverrides).length > 0) {
+                                    context += "- Recent corrections:\n";
+                                    Object.entries(learningData.commonOverrides).slice(0, 3).forEach(([pattern, count]) => {
+                                        context += `  • ${pattern} (${count}x)\n`;
+                                    });
+                                }
+                            }
+                            
+                            return context;
+                        })()}\n\nProvide your analysis in the exact JSON format specified in your instructions.`
+                    })
+                });
+
+                if (!messageRes.ok) throw new Error(`Message creation failed: ${messageRes.status}`);
+
+                // Run the assistant
+                const runRes = await fetch(`${baseUrl}/threads/${thread.id}/runs`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json", 
+                        "Authorization": `Bearer ${apiKey}`,
+                        "OpenAI-Beta": "assistants=v2"
+                    },
+                    body: JSON.stringify({
+                        assistant_id: assistantId
+                    })
+                });
+
+                if (!runRes.ok) throw new Error(`Run creation failed: ${runRes.status}`);
+                const run = await runRes.json();
+
+                // Poll for completion
+                let runStatus = run;
+                let attempts = 0;
+                const maxAttempts = 30; // 30 seconds max
+
+                while (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
+                    if (attempts++ > maxAttempts) {
+                        throw new Error("Assistant response timeout");
+                    }
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    const statusRes = await fetch(`${baseUrl}/threads/${thread.id}/runs/${run.id}`, {
+                        headers: {
+                            "Authorization": `Bearer ${apiKey}`,
+                            "OpenAI-Beta": "assistants=v2"
+                        }
+                    });
+                    
+                    if (!statusRes.ok) throw new Error(`Status check failed: ${statusRes.status}`);
+                    runStatus = await statusRes.json();
+                }
+
+                if (runStatus.status !== 'completed') {
+                    throw new Error(`Assistant run failed: ${runStatus.status}`);
+                }
+
+                // Get the response
+                const messagesRes = await fetch(`${baseUrl}/threads/${thread.id}/messages`, {
+                    headers: {
+                        "Authorization": `Bearer ${apiKey}`,
+                        "OpenAI-Beta": "assistants=v2"
+                    }
+                });
+
+                if (!messagesRes.ok) throw new Error(`Messages retrieval failed: ${messagesRes.status}`);
+                const messages = await messagesRes.json();
+                
+                const assistantMessage = messages.data.find(msg => msg.role === 'assistant');
+                if (!assistantMessage) {
+                    throw new Error("No assistant response found");
+                }
+
+                // Parse the JSON response from assistant
+                const responseText = assistantMessage.content[0].text.value;
+                let data;
+                
+                try {
+                    // Extract JSON from response (in case there's extra text)
+                    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        data = JSON.parse(jsonMatch[0]);
+                    } else {
+                        data = JSON.parse(responseText);
+                    }
+                } catch (e) {
+                    throw new Error(`Invalid JSON response from assistant: ${e.message}`);
+                }
+
+                // Validate and sanitize response
+                const safe = {
+                    violation: VIOLATION_LEVELS.includes(data.violation) ? data.violation : "None",
+                    action: AI_ACTIONS.includes(data.action) ? data.action : "NAR", 
+                    sentiment: AI_SENTIMENTS.includes(data.sentiment) ? data.sentiment : "😐",
+                    rationale: String(data.rationale || ""),
+                    ban_length: BAN_LENGTHS.includes(data.ban_length) ? data.ban_length : "None",
+                    message_to_user: String(data.message_to_user || ""),
+                    admin_note: String(data.admin_note || "Enhanced by OpenAI Assistant"),
+                };
+
+                return safe;
+            };
+
+            const saveRecordAPI = async ({ baseUrl, apiKey, record }) => {
+                const res = await fetch(`${baseUrl.replace(/\/$/, "")}/records`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+                    },
+                    body: JSON.stringify(record),
+                });
+                return res.ok;
+            };
+
+            const saveReportAPI = async ({ baseUrl, apiKey, report }) => {
+                const res = await fetch(`${baseUrl.replace(/\/$/, "")}/reports`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+                    },
+                    body: JSON.stringify(report),
+                });
+                return res.ok;
+            };
 
             // Templates data
             const templates = {
@@ -161,6 +507,68 @@
                 { id: 'response', question: 'What are response times?', answer: 'P1: Within 1 hour\nP2: Within 4 hours\nP3: Within 24 hours\nP4: Within 48 hours\n\nThese are guidelines; use judgment based on severity.' }
             ];
 
+            // Guidelines for dropdown
+            const guidelineOptions = [
+                { id: 'gg01', name: 'GG01: Be respectful', text: templates.gg01 },
+                { id: 'gg02', name: 'GG02: Meaningful contributions', text: templates.gg02 },
+                { id: 'gg03', name: 'GG03: Consequences', text: templates.gg03 },
+                { id: 'gg04', name: 'GG04: Reporting Content', text: templates.gg04 },
+                { id: 'gg05', name: 'GG05: Personal info', text: templates.gg05 },
+                { id: 'sg00', name: 'SG00: Refrain from', text: templates.sg00 },
+                { id: 'sg01', name: 'SG01: Adult content', text: templates.sg01 },
+                { id: 'sg02', name: 'SG02: Threats', text: templates.sg02 },
+                { id: 'sg03', name: 'SG03: Dishonest', text: templates.sg03 },
+                { id: 'sg04', name: 'SG04: Duplicative', text: templates.sg04 },
+                { id: 'sg05', name: 'SG05: Activism', text: templates.sg05 },
+                { id: 'sg06', name: 'SG06: Advertising', text: templates.sg06 },
+                { id: 'sg07', name: 'SG07: Off-eBay sites', text: templates.sg07 },
+                { id: 'sg08', name: 'SG08: Reposted content', text: templates.sg08 },
+                { id: 'sg09', name: 'SG09: Mod warnings', text: templates.sg09 },
+                { id: 'sg10', name: 'SG10: Naming/shaming', text: templates.sg10 },
+                { id: 'sg11', name: 'SG11: Policy violations', text: templates.sg11 },
+                { id: 'sg12', name: 'SG12: Copyright', text: templates.sg12 }
+            ];
+
+            const selectGuideline = (templateId, guidelineId) => {
+                if (guidelineId === 'other') {
+                    // Clear the field and focus on the text input for custom entry
+                    updateTemplateInput(templateId, 'guidelines', '');
+                    // Small delay to ensure the input is cleared before focusing
+                    setTimeout(() => {
+                        const guidelinesInput = document.querySelector(`[data-template-id="${templateId}"][data-field="guidelines"]`);
+                        if (guidelinesInput) {
+                            guidelinesInput.focus();
+                        }
+                    }, 50);
+                } else {
+                    const guideline = guidelineOptions.find(g => g.id === guidelineId);
+                    if (guideline) {
+                        updateTemplateInput(templateId, 'guidelines', guideline.text);
+                    }
+                }
+            };
+
+            // Admin Notes specific function - populates with clean violation name only
+            const selectAdminNoteViolation = (guidelineId) => {
+                if (guidelineId === 'other') {
+                    // Clear the field and focus on the text input for custom entry
+                    updateAdminNoteInput('edited', 'violation', '');
+                    setTimeout(() => {
+                        const violationInput = document.querySelector('[data-admin-field="violation"]');
+                        if (violationInput) {
+                            violationInput.focus();
+                        }
+                    }, 50);
+                } else {
+                    const guideline = guidelineOptions.find(g => g.id === guidelineId);
+                    if (guideline) {
+                        // Extract clean name from "GG01: Be respectful" -> "Be respectful"
+                        const cleanName = guideline.name.replace(/^[SG]+\d+:\s*/, '');
+                        updateAdminNoteInput('edited', 'violation', cleanName);
+                    }
+                }
+            };
+
             const templateList = [
                 { id: 'friendlyRemovedPost', name: 'Friendly PM: Removed Post', content: templates.friendlyRemovedPost, isDynamic: true, type: 'removed' },
                 { id: 'warningRemovedPost', name: 'Warning PM: Removed Post', content: templates.warningRemovedPost, isDynamic: true, type: 'removed' },
@@ -173,7 +581,10 @@
                 { id: 'offTopic', name: 'Steering: Off Topic', content: templates.offTopic },
                 { id: 'bullying', name: 'Bullying Reply', content: templates.bullying },
                 { id: 'giftCardScam', name: 'Gift Card Scam Reply', content: templates.giftCardScam },
-                { id: 'csRedirect', name: 'PM: CS Redirect', content: templates.csRedirect, isDynamic: true, type: 'username' },
+                { id: 'csRedirect', name: 'PM: CS Redirect', content: templates.csRedirect, isDynamic: true, type: 'username' }
+            ];
+
+            const guidelinesList = [
                 { id: 'gg01', name: 'GG01: Be respectful', content: templates.gg01 },
                 { id: 'gg02', name: 'GG02: Meaningful contributions', content: templates.gg02 },
                 { id: 'gg03', name: 'GG03: Consequences', content: templates.gg03 },
@@ -194,6 +605,334 @@
                 { id: 'sg12', name: 'SG12: Copyright', content: templates.sg12 }
             ];
 
+            // Training data collection functions
+            const recordTrainingData = (postContent, priority, userAction) => {
+                const newInstance = {
+                    index: trainingData.instanceCount,
+                    postContent: postContent,
+                    priority: priority,
+                    userAction: userAction,
+                    timestamp: new Date().toISOString()
+                };
+
+                setTrainingData(prev => ({
+                    instanceCount: prev.instanceCount + 1,
+                    trainingInstances: [...prev.trainingInstances, newInstance]
+                }));
+            };
+
+            const exportTrainingData = () => {
+                const dataToExport = {
+                    instanceCount: trainingData.instanceCount,
+                    trainingInstances: trainingData.trainingInstances,
+                    exportDate: new Date().toISOString(),
+                    version: "1.0"
+                };
+
+                const dataStr = JSON.stringify(dataToExport, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = `AI_assistant_training_data_${new Date().toISOString().split('T')[0]}.json`;
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            };
+
+            // Admin keyboard shortcuts and console access
+            useEffect(() => {
+                const handleKeyDown = (event) => {
+                    if (event.ctrlKey && event.shiftKey && event.key === 'T') {
+                        event.preventDefault();
+                        exportTrainingData();
+                        console.log('Training data exported. Instance count:', trainingData.instanceCount);
+                    }
+                    if (event.ctrlKey && event.shiftKey && event.key === 'C') {
+                        event.preventDefault();
+                        console.log('AI Training Data:', trainingData);
+                    }
+                };
+                
+                document.addEventListener('keydown', handleKeyDown);
+                window.adminTools = {
+                    exportTrainingData,
+                    getTrainingData: () => trainingData,
+                    clearTrainingData: () => setTrainingData({ instanceCount: 0, trainingInstances: [] }),
+                    getInstanceCount: () => trainingData.instanceCount
+                };
+                
+                return () => document.removeEventListener('keydown', handleKeyDown);
+            }, [trainingData]);
+
+            // Webscraping functions
+            const scrapeEbayPost = async (url) => {
+                if (!url.trim()) {
+                    alert('Please enter a valid eBay community URL');
+                    return;
+                }
+
+                // Check for Community Mentor Lounge posts - DO NOT MODERATE
+                if (url.includes('/Community-Mentor-Lounge/') || url.includes('mentor-lounge')) {
+                    alert(`🚫 Community Mentor Lounge Post Detected!
+
+⚠️ DO NOT MODERATE! ⚠️
+
+Community Mentor Lounge posts are restricted access and should not be moderated through this tool.
+
+Please use a different eBay community post URL from public sections like:
+• Selling
+• Buying  
+• Returns
+• Payments
+• etc.`);
+                    return;
+                }
+
+                setIsScrapingLoading(true);
+                try {
+                    let content = '';
+                    try {
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            content = await response.text();
+                        }
+                    } catch (corsError) {
+                        const proxies = [
+                            `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+                            `https://cors-anywhere.herokuapp.com/${url}`,
+                            `https://thingproxy.freeboard.io/fetch/${url}`
+                        ];
+
+                        let proxyWorked = false;
+                        for (const proxyUrl of proxies) {
+                            try {
+                                const proxyResponse = await fetch(proxyUrl);
+                                if (proxyResponse.ok) {
+                                    const proxyData = await proxyResponse.json();
+                                    content = proxyData.contents || proxyData;
+                                    proxyWorked = true;
+                                    break;
+                                }
+                            } catch (proxyError) {
+                                continue;
+                            }
+                        }
+
+                        if (!proxyWorked) {
+                            const userContent = prompt(`🚫 CORS Protection Active
+
+eBay blocks automated scraping for security. Please help by:
+
+1. Go to the eBay community post
+2. Select and copy the post content (Ctrl+A, then Ctrl+C)
+3. Paste it below:
+
+This includes: username, post title, date, and message content.`);
+                            
+                            if (!userContent) {
+                                setIsScrapingLoading(false);
+                                return;
+                            }
+                            content = userContent;
+                        }
+                    }
+
+                    const extractedData = parseEbayContent(content, url);
+                    setScrapedData(extractedData);
+                } catch (error) {
+                    console.error('Scraping error:', error);
+                    alert(`Failed to scrape URL: ${error.message}`);
+                } finally {
+                    setIsScrapingLoading(false);
+                }
+            };
+
+            const parseEbayContent = (content, url) => {
+                // eBay-specific patterns based on real post analysis from examples:
+                // Example 1: elfilin (Selling) - elfilin elfilin Adventurer (**12** _feedbacks_) ‎10-26-2025 11:30 PM
+                // Example 2: imop45 (Buying) - imop45 imop45 Adventurer (**80** _feedbacks_) ‎10-27-2025 10:13 AM
+                // Example 3: racingpatches_0 (Buying) - racingpatches_0 racingpatches_0 Rising Star (**87** _feedbacks_) ‎10-27-2025 06:40 AM
+                // Example 4: landtag (Buying) - landtag landtag Explorer (**59** _feedbacks_) ‎10-28-2025 09:44 AM
+                // Example 5: rusodis0 (Returns) - rusodis0 rusodis0 Adventurer (**18** _feedbacks_) ‎10-29-2025 03:55 AM
+                // Example 6: cinvmak1 (Motors) - cinvmak1 cinvmak1 Enthusiast (**8** _feedbacks_) ‎10-29-2025 06:40 AM
+                // Example 7: deep_rock_star (The Park) - "Duets by some of the greatest singers of all time" ‎10-28-2025 06:58 PM - edited ‎10-28-2025 07:43 PM
+                // Example 8: gregsju (Buying) - gregsju Rising Star "Wrong item sent" 10-29-2025 07:07 AM
+                // Example 9: xclusive_tradingcards (Selling) - "Ebay Selling Protection is a Joke!" ‎10-27-2025 01:48 PM - edited ‎10-27-2025 01:49 PM
+                // Also: house*of*paws (Visionary **777**), participatrophy (Thrill-Seeker **0**), wastingtime101 (Superstar **0**)
+                const patterns = {
+                    username: [
+                        // PRIMARY: username username Rank - comprehensive rank list from 6 examples + replies
+                        /\b([a-zA-Z0-9_.*-]+)\s+\1\s+(?:Adventurer|Visionary|Rockstar|Pioneer|Top Contributor|Newbie|Trailblazer|Superstar|Rising Star|Explorer|Thrill-Seeker|Enthusiast)/i,
+                        // SECONDARY: escaped username format (racingpatches\_0, house*of*paws)
+                        /\b([a-zA-Z0-9_.*\\-]+)\s+([a-zA-Z0-9_.*\\-]+)\s+(?:Adventurer|Visionary|Rockstar|Pioneer|Top Contributor|Newbie|Trailblazer|Superstar|Rising Star|Explorer|Thrill-Seeker|Enthusiast)/i,
+                        // TERTIARY: username Rank (**count** _feedbacks_ - comprehensive rank support including zero feedback
+                        /\b([a-zA-Z0-9_.*-]+)\s+(?:Adventurer|Visionary|Rockstar|Pioneer|Top Contributor|Newbie|Trailblazer|Superstar|Rising Star|Explorer|Thrill-Seeker|Enthusiast)\s+\(\*\*\d+\*\*\s+_feedbacks_/i,
+                        // QUATERNARY: any username before feedback count (broader match)
+                        /\b([a-zA-Z0-9_.*-]+)\s+.*?\(\*\*\d+\*\*\s+_feedbacks_\s+(?:star\s+level|\))/i,
+                        // @mentions with escaped characters and special chars
+                        /@([a-zA-Z0-9_.*\\-]+)/,
+                        // Clean @mentions without escapes
+                        /@([a-zA-Z0-9_.*-]+)/
+                    ],
+                    title: [
+                        // PRIMARY: eBay's ## markdown header format (handles ALL CAPS like "EBAY DO NOT ALLOW")
+                        /##\s*([^\n\r]+?)\.?\s*$/m,
+                        // SECONDARY: look for complete title line after "##" (broader match)
+                        /##\s+([^#\n]+)/,
+                        // TERTIARY: Title extraction from complex posts with colons/subtitles
+                        /##\s+eBay[^:]*:\s*(.+)/i,
+                        // QUATERNARY: ALL CAPS eBay-related titles
+                        /##\s+(EBAY[^.\n]*)/i,
+                        // QUINTERNARY: Emotional/personal posts (like "I am 81 and have been scammed")
+                        /##\s+(I am \d+[^.\n]*)/i,
+                        // SIXERNARY: Returns/refund related titles (like "Refund of the damaged item")
+                        /##\s+(Refund[^.\n]*)/i,
+                        // SEVENTHERNARY: Motors/service related titles (like "Looking for a selling assistant")
+                        /##\s+(Looking for[^.\n]*)/i,
+                        // EIGHTHERNARY: Technical/shipping issues (quotes in titles)
+                        /##\s+([^.\n]*(?:printable|label|qr code|UPS|shipping)[^.\n]*)/i,
+                        // FALLBACK: common eBay post keywords (broader net including motors, shipping terms)
+                        /(?:^|\n)\s*([^.\n]*(?:scammer|scammed|feedback|cancel|sale|positive|negative|buyer|seller|request|UNIUNI|delivery|allow|help|won\'t help|refund|damaged|return|broken|assistant|selling|protection|label|printable)[^.\n]*)/im
+                    ],
+                    datetime: [
+                        // PRIMARY: eBay's exact format with special character ‎MM-DD-YYYY HH:MM AM/PM
+                        /‎(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+                        // SECONDARY: same format without invisible character
+                        /(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+                        // TERTIARY: edited posts format (‎10-28-2025 06:58 PM - edited ‎10-28-2025 07:43 PM)
+                        /‎(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))\s*-\s*edited\s*‎(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+                        // QUATERNARY: edited posts without invisible character
+                        /(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))\s*-\s*edited\s*(\d{1,2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+                        // QUINTERNARY: month format (Oct-27-2025 10:13 AM)
+                        /([A-Z][a-z]{2}-\d{1,2}-\d{4}\s+\d{1,2}:\d{2}\s+(?:AM|PM))/i,
+                        // FALLBACK: various other formats
+                        /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/
+                    ]
+                };
+
+                const extractFirst = (patternArray) => {
+                    for (const pattern of patternArray) {
+                        const match = content.match(pattern);
+                        if (match && match[1]) {
+                            return match[1].trim();
+                        }
+                    }
+                    return '';
+                };
+
+                let username = extractFirst(patterns.username);
+                let title = extractFirst(patterns.title);
+                let datetime = extractFirst(patterns.datetime);
+
+                if (title) {
+                    title = title
+                        .replace(/[-|]*eBay Community.*$/i, '')
+                        .replace(/^.*?Selling\//, '')
+                        .replace(/\/.*$/, '')
+                        .replace(/^##\s*/, '')
+                        .trim();
+                }
+
+                if (username) {
+                    username = username
+                        .replace(/\\/g, '') // Remove escape characters (\)
+                        .replace(/[^a-zA-Z0-9_.*-]/g, '') // Keep valid username chars including asterisks
+                        .replace(/^[_.*]+|[_.*]+$/g, ''); // Remove leading/trailing special chars
+                }
+
+                return {
+                    username: username.substring(0, 50) || '',
+                    title: title.substring(0, 200) || '',
+                    datetime: datetime.substring(0, 50) || '',
+                    postContent: content.length > 500 ? content.substring(0, 500) + '...' : content
+                };
+            };
+
+            // Apply scraped data to specific template
+            const applyScrapedDataToTemplate = (templateId, scrapedData) => {
+                if (!scrapedData) {
+                    alert('No data was scraped successfully.');
+                    return;
+                }
+
+                const updates = {};
+                if (scrapedData.username) updates.username = scrapedData.username;
+                if (scrapedData.title) updates.title = scrapedData.title;
+                if (scrapedData.datetime) updates.datetime = scrapedData.datetime;
+
+                setTemplateInputs(prev => ({
+                    ...prev,
+                    [templateId]: { ...prev[templateId], ...updates }
+                }));
+
+                const templateName = templateList.find(t => t.id === templateId)?.name || 'template';
+                alert(`✅ Post info extracted and applied to ${templateName}!\n\nUsername: ${scrapedData.username || 'Not found'}\nTitle: ${scrapedData.title || 'Not found'}\nDate/Time: ${scrapedData.datetime || 'Not found'}`);
+            };
+
+            // Scrape and apply to specific template
+            const scrapeForTemplate = async (url, templateId) => {
+                if (!url.trim()) {
+                    alert('Please enter a valid eBay community URL');
+                    return;
+                }
+
+                if (url.includes('/Community-Mentor-Lounge/') || url.includes('mentor-lounge')) {
+                    alert(`🚫 Community Mentor Lounge Post Detected!\n\n⚠️ DO NOT MODERATE! ⚠️\n\nCommunity Mentor Lounge posts are restricted access and should not be moderated through this tool.\n\nPlease use a different eBay community post URL from public sections like:\n• Selling\n• Buying\n• Returns\n• Payments\n• etc.`);
+                    return;
+                }
+
+                setIsScrapingLoading(true);
+                try {
+                    let content = '';
+                    try {
+                        const response = await fetch(url);
+                        if (response.ok) {
+                            content = await response.text();
+                        }
+                    } catch (corsError) {
+                        const proxies = [
+                            `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+                            `https://cors-anywhere.herokuapp.com/${url}`,
+                            `https://thingproxy.freeboard.io/fetch/${url}`
+                        ];
+
+                        let proxyWorked = false;
+                        for (const proxyUrl of proxies) {
+                            try {
+                                const proxyResponse = await fetch(proxyUrl);
+                                if (proxyResponse.ok) {
+                                    const proxyData = await proxyResponse.json();
+                                    content = proxyData.contents || proxyData;
+                                    proxyWorked = true;
+                                    break;
+                                }
+                            } catch (proxyError) {
+                                continue;
+                            }
+                        }
+
+                        if (!proxyWorked) {
+                            const userContent = prompt(`🚫 CORS Protection Active\n\neBay blocks automated scraping for security. Please help by:\n\n1. Go to the eBay community post\n2. Select and copy the post content (Ctrl+A, then Ctrl+C)\n3. Paste it below:\n\nThis includes: username, post title, date, and message content.`);
+                            
+                            if (!userContent) {
+                                setIsScrapingLoading(false);
+                                return;
+                            }
+                            content = userContent;
+                        }
+                    }
+
+                    const extractedData = parseEbayContent(content, url);
+                    applyScrapedDataToTemplate(templateId, extractedData);
+                } catch (error) {
+                    console.error('Scraping error:', error);
+                    alert(`Failed to scrape URL: ${error.message}`);
+                } finally {
+                    setIsScrapingLoading(false);
+                }
+            };
+
             // Load data from localStorage on mount
             useEffect(() => {
                 try {
@@ -202,10 +941,23 @@
                     const savedAdminNotes = localStorage.getItem('ebay-mod-admin-notes');
                     const savedDarkMode = localStorage.getItem('ebay-mod-dark-mode');
                     
+                    // Load AI settings
+                    const savedApiBase = localStorage.getItem('ebay-mod-api-base') || "";
+                    const savedApiKey = localStorage.getItem('ebay-mod-api-key') || "";
+                    const savedGoLive = localStorage.getItem('ebay-mod-go-live') === "1";
+                    const savedAiSaved = localStorage.getItem('ebay-mod-ai-saved');
+                    const savedGroundTruth = localStorage.getItem('ebay-mod-ground-truth');
+                    
                     if (savedCounters) setCounters(JSON.parse(savedCounters));
                     if (savedTemplateInputs) setTemplateInputs(JSON.parse(savedTemplateInputs));
                     if (savedAdminNotes) setAdminNoteInputs(JSON.parse(savedAdminNotes));
                     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+                    
+                    setApiBase(savedApiBase);
+                    setApiKey(savedApiKey);
+                    setGoLive(savedGoLive);
+                    if (savedAiSaved) setAiSaved(JSON.parse(savedAiSaved));
+                    if (savedGroundTruth) setGroundTruthNotes(JSON.parse(savedGroundTruth));
                 } catch (error) {
                     console.error('Error loading saved data:', error);
                 }
@@ -247,6 +999,118 @@
                 }
             }, [darkMode]);
 
+            // Save training data to localStorage
+            useEffect(() => {
+                try {
+                    localStorage.setItem('ebay-mod-training-data', JSON.stringify(trainingData));
+                } catch (error) {
+                    console.error('Error saving training data:', error);
+                }
+            }, [trainingData]);
+
+            // Save AI settings to localStorage
+            useEffect(() => {
+                try {
+                    localStorage.setItem('ebay-mod-api-base', apiBase || "");
+                    localStorage.setItem('ebay-mod-api-key', apiKey || "");
+                    localStorage.setItem('ebay-mod-go-live', goLive ? "1" : "0");
+                } catch (error) {
+                    console.error('Error saving AI settings:', error);
+                }
+            }, [apiBase, apiKey, goLive]);
+
+            // Save AI saved items to localStorage
+            useEffect(() => {
+                try {
+                    localStorage.setItem('ebay-mod-ai-saved', JSON.stringify(aiSaved));
+                } catch (error) {
+                    console.error('Error saving AI saved items:', error);
+                }
+            }, [aiSaved]);
+
+            // Save ground truth notes to localStorage
+            useEffect(() => {
+                try {
+                    localStorage.setItem('ebay-mod-ground-truth', JSON.stringify(groundTruthNotes));
+                } catch (error) {
+                    console.error('Error saving ground truth notes:', error);
+                }
+            }, [groundTruthNotes]);
+
+            // Learning system - analyze patterns from historical corrections
+            const analyzeLearningPatterns = () => {
+                if (aiSaved.length < 3) return null;
+                
+                const patterns = {
+                    overrideRate: 0,
+                    commonOverrides: {},
+                    violationAccuracy: {},
+                    priorityBiases: {},
+                    recentTrend: 'stable'
+                };
+                
+                // Calculate overall override rate
+                const overrides = aiSaved.filter(r => r.ai && r.ai.action !== r.final_action).length;
+                patterns.overrideRate = Math.round((overrides / aiSaved.length) * 100);
+                
+                // Analyze common override patterns
+                aiSaved.forEach(record => {
+                    if (record.ai && record.ai.action !== record.final_action) {
+                        const pattern = `${record.ai.action}→${record.final_action}`;
+                        patterns.commonOverrides[pattern] = (patterns.commonOverrides[pattern] || 0) + 1;
+                    }
+                    
+                    // Track violation detection accuracy  
+                    if (record.ai) {
+                        const hasViolation = record.final_action !== "NAR";
+                        const aiDetectedViolation = record.ai.violation !== "None";
+                        const key = hasViolation ? "violations_detected" : "clean_posts_detected";
+                        patterns.violationAccuracy[key] = (patterns.violationAccuracy[key] || 0) + (hasViolation === aiDetectedViolation ? 1 : 0);
+                    }
+                });
+                
+                return patterns;
+            };
+
+            // Enhanced local AI that learns from user corrections
+            const enhancedLocalSuggest = (post, priority) => {
+                let suggestion = localSuggest(post, priority);
+                const patterns = analyzeLearningPatterns();
+                
+                if (patterns && aiSaved.length >= 5) {
+                    // Adjust based on learning patterns
+                    const overrideRate = patterns.overrideRate;
+                    
+                    // If we're consistently over-suggesting certain actions, tone them down
+                    if (patterns.commonOverrides["Ban→Edit"] > 2) {
+                        if (suggestion.action === "Ban" && suggestion.violation !== "Major") {
+                            suggestion.action = "Edit";
+                            suggestion.ban_length = "None";
+                            suggestion.rationale += " [Learned adjustment: Previously over-suggested bans for this violation level]";
+                        }
+                    }
+                    
+                    if (patterns.commonOverrides["Edit→Steer"] > 2) {
+                        if (suggestion.action === "Edit" && suggestion.violation === "Minor") {
+                            suggestion.action = "Steer";
+                            suggestion.rationale += " [Learned adjustment: User prefers steering for minor violations]";
+                        }
+                    }
+                    
+                    if (patterns.commonOverrides["NAR→Steer"] > 1 && priority === "P1") {
+                        if (suggestion.action === "NAR") {
+                            suggestion.action = "Steer";
+                            suggestion.violation = "Minor";
+                            suggestion.rationale = "P1 flagged content requires action even when no clear violation detected. [Learned from user feedback]";
+                        }
+                    }
+                    
+                    // Note: Learning features disabled for production
+                }
+                
+                return suggestion;
+            };
+
             useEffect(() => {
                 const handleClickOutside = (event) => {
                     if (openDropdown && dropdownRefs.current[openDropdown]) {
@@ -270,20 +1134,29 @@
             };
 
             const updateTemplateInput = (templateId, field, value) => {
-                setTemplateInputs(prev => ({
-                    ...prev,
-                    [templateId]: { ...prev[templateId], [field]: value }
-                }));
+                setTemplateInputs(prev => {
+                    const updates = { [field]: value };
+                    
+                    // Auto-populate "here" field with URL for edited post templates
+                    if (field === 'url' && value && (templateId === 'friendlyEditedPost' || templateId === 'warningEditedPost')) {
+                        updates.here = value;
+                    }
+                    
+                    return {
+                        ...prev,
+                        [templateId]: { ...prev[templateId], ...updates }
+                    };
+                });
             };
 
             const clearTemplateInputs = (templateId) => {
                 const defaults = {
-                    friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                    warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                    friendlyEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-                    warningEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-                    csRedirect: { username: '' },
-                    banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+                    friendlyRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+                    warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+                    friendlyEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+                    warningEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+                    csRedirect: { url: '', username: '' },
+                    banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
                 };
                 if (defaults[templateId]) {
                     setTemplateInputs(prev => ({ ...prev, [templateId]: defaults[templateId] }));
@@ -355,6 +1228,198 @@
                 setCounters(emptyCounters);
                 setShowResetConfirm(false);
             };
+
+            // AI event handlers
+            const runAI = async () => {
+                // Input validation
+                if (!aiPost.trim()) {
+                    setErrorSuggest("Please enter post content to analyze");
+                    return;
+                }
+                
+                if (aiPost.length > 10000) {
+                    setErrorSuggest("Post content too long (max 10,000 characters)");
+                    return;
+                }
+                
+                setBusySuggest(true); 
+                setErrorSuggest("");
+                
+                try {
+                    let suggestion;
+                    if (goLive && apiBase) {
+                        // Validate API configuration
+                        if (!apiBase.startsWith('http')) {
+                            throw new Error("Invalid API URL - must start with http:// or https://");
+                        }
+                        
+                        suggestion = await callModerationAPI({ baseUrl: apiBase, apiKey, post_text: aiPost, priority: aiPriority });
+                        setLiveStatus("ready");
+                        console.log("✅ AI API Success:", suggestion);
+                    } else {
+                        suggestion = enhancedLocalSuggest(aiPost, aiPriority);
+                        setLiveStatus("offline");
+                        console.log("🔧 Enhanced Local AI Analysis:", suggestion);
+                    }
+                    
+                    // Validate suggestion response
+                    if (!suggestion || typeof suggestion !== 'object') {
+                        throw new Error("Invalid AI response format");
+                    }
+                    
+                    setAiSuggestion(suggestion);
+                } catch (e) {
+                    console.error("❌ AI Error:", e);
+                    // Fallback to enhanced learning local analysis with error context
+                    const fallback = enhancedLocalSuggest(aiPost, aiPriority);
+                    fallback.admin_note = `API Error (${e.message}) - Using enhanced local fallback with learning`;
+                    setAiSuggestion(fallback);
+                    setLiveStatus("error");
+                    setErrorSuggest(`API Error: ${e.message}`);
+                } finally {
+                    setBusySuggest(false);
+                }
+            };
+
+            const closeAI = async () => {
+                if (!aiSuggestion) {
+                    setErrorSuggest("No AI suggestion to complete");
+                    return;
+                }
+                
+                if (!aiFinalAction) {
+                    setErrorSuggest("Please select the action you actually took");
+                    return;
+                }
+                
+                try {
+                    // Map AI actions to existing counter actions
+                    const actionMapping = {
+                        "NAR": "NAR",
+                        "Steer": "Steer", 
+                        "Edit": "Edit",
+                        "Archive": "Remove", // Map Archive to Remove
+                        "Ban": "Ban",
+                        "Lock": "Locked"
+                    };
+                    
+                    const counterAction = actionMapping[aiFinalAction] || aiFinalAction;
+                    
+                    // Validate action mapping
+                    if (!actionMapping[aiFinalAction]) {
+                        console.warn(`⚠️ Unknown action "${aiFinalAction}" - using as-is`);
+                    }
+                    
+                    // Update existing counter system (P1-P4 only, since existing system doesn't have P5)
+                    const validPriority = ["P1", "P2", "P3", "P4"].includes(aiPriority) ? aiPriority : "P4";
+                    
+                    if (counters[validPriority] && counters[validPriority][counterAction] !== undefined) {
+                        addFlag(validPriority, counterAction);
+                        console.log(`✅ AI Completion: Updated counter ${validPriority} ${counterAction} (+1)`);
+                    } else {
+                        console.warn(`⚠️ Could not map AI action "${aiFinalAction}" to counter action. Available actions:`, Object.keys(counters[validPriority] || {}));
+                    }
+                    
+                    // Calculate accuracy metrics
+                    const isCorrectAction = aiSuggestion.action === aiFinalAction;
+                    const isCorrectViolation = aiSuggestion.violation !== "None";
+                    
+                    // Save AI interaction for learning
+                    const rec = { 
+                        id: uid(), 
+                        source: "AI", 
+                        post_text: aiPost.substring(0, 200) + (aiPost.length > 200 ? "..." : ""), // Truncate for storage
+                        priority: aiPriority, 
+                        ai: aiSuggestion, 
+                        final_action: aiFinalAction, 
+                        counter_updated: `${validPriority}-${counterAction}`,
+                        accuracy: {
+                            action_match: isCorrectAction,
+                            violation_detected: isCorrectViolation
+                        },
+                        timestamp: new Date().toISOString() 
+                    };
+                    setAiSaved((s) => [rec, ...s]);
+                    
+                    // Track learning when user overrides AI suggestion
+                    if (!isCorrectAction) {
+                        const learningNote = `Override: AI suggested ${aiSuggestion.action} → User chose ${aiFinalAction} | Post: "${aiPost.substring(0, 50)}..." | Violation: ${aiSuggestion.violation} | Priority: ${aiPriority}`;
+                        setGroundTruthNotes((g) => [learningNote, ...g.slice(0, 49)]); // Keep max 50 notes
+                    }
+                    
+                    // Save to API if live
+                    if (goLive && apiBase) { 
+                        try { 
+                            await saveRecordAPI({ baseUrl: apiBase, apiKey, record: rec }); 
+                            console.log("💾 Saved to API successfully");
+                        } catch (e) {
+                            console.warn("⚠️ Failed to save to API:", e.message);
+                        }
+                    }
+                    
+                    // Show success feedback
+                    console.log(`🎯 AI Analysis Complete: ${isCorrectAction ? 'Matched' : 'Override'} | Counter: ${validPriority}+${counterAction}`);
+                    
+                    // Reset inputs
+                    setAiPost(""); 
+                    setAiPriority("P3"); 
+                    setAiSuggestion(null); 
+                    setAiFinalAction("");
+                    setErrorSuggest("");
+                    
+                } catch (error) {
+                    console.error("❌ Error completing AI analysis:", error);
+                    setErrorSuggest(`Error: ${error.message}`);
+                }
+            };
+
+            const removeAiRecord = (id) => setAiSaved((s) => s.filter((r) => r.id !== id));
+
+            const configureApi = () => {
+                const base = prompt("OpenAI API Base URL", apiBase || "https://api.openai.com/v1");
+                if (base !== null) setApiBase(base);
+                
+                const key = prompt("OpenAI API Key", "sk-...");
+                if (key !== null) setApiKey(key);
+                
+                const assistantId = prompt("Assistant ID (from OpenAI Platform)", localStorage.getItem('ebay-mod-assistant-id') || "asst_...");
+                if (assistantId !== null) {
+                    localStorage.setItem('ebay-mod-assistant-id', assistantId);
+                }
+            };
+
+            const testCases = [
+                // Major violations
+                { name: "Violence threat → Major/Ban", post: "I'll beat you up if you outbid me again.", priority: "P1", expect: { violation: "Major", action: "Ban" } },
+                { name: "Severe profanity → Major/Ban", post: "You're such an asshole for bidding against me.", priority: "P1", expect: { violation: "Major", action: "Ban" } },
+                { name: "Fraud accusation → Major/Remove", post: "This eBay seller is a scam artist trying to cheat buyers.", priority: "P1", expect: { violation: "Major", action: "Remove" } },
+                
+                // Moderate violations
+                { name: "Phone number → Moderate/Edit", post: "Please call me at 215-858-8440 if interested.", priority: "P2", expect: { violation: "Moderate", action: "Edit" } },
+                { name: "Email address → Moderate/Edit", post: "Contact me at john@gmail.com for more info.", priority: "P3", expect: { violation: "Moderate", action: "Edit" } },
+                { name: "Mod hostility → Moderate/Edit", post: "The mods suck and eBay is corrupt and useless.", priority: "P2", expect: { violation: "Moderate", action: "Edit" } },
+                { name: "Personal attack → Moderate/Edit", post: "You're so stupid and ignorant about this topic.", priority: "P3", expect: { violation: "Moderate", action: "Edit" } },
+                
+                // Minor violations
+                { name: "Advertising → Minor/Steer", post: "Check out my store at bestdeals.com for great prices!", priority: "P3", expect: { violation: "Minor", action: "Steer" } },
+                { name: "Off-topic → Minor/Steer", post: "This is off-topic and a waste of time to discuss.", priority: "P4", expect: { violation: "Minor", action: "Steer" } },
+                { name: "Heated discussion → Minor/Lock", post: "Everyone is arguing and this is getting heated and personal.", priority: "P3", expect: { violation: "Minor", action: "Lock" } },
+                
+                // Positive cases
+                { name: "Help request → None/NAR", post: "Can someone please help me understand how eBay's return policy works?", priority: "P4", expect: { violation: "None", action: "NAR" } },
+                { name: "Thank you post → None/NAR", post: "Thanks so much for the helpful advice, I really appreciate it!", priority: "P5", expect: { violation: "None", action: "NAR" } },
+                
+                // Edge cases
+                { name: "Empty post → Minor/Remove", post: "", priority: "P3", expect: { violation: "Minor", action: "Remove" } },
+                { name: "Very short → Minor/Steer", post: "ok", priority: "P4", expect: { violation: "Minor", action: "Steer" } },
+                { name: "P1 clean post → Minor (escalated)", post: "This is a normal question about shipping.", priority: "P1", expect: { violation: "Minor", action: "NAR" } }
+            ];
+            
+            const runDevTests = () => testCases.map((tc) => { 
+                const got = enhancedLocalSuggest(tc.post, tc.priority); 
+                const pass = got.violation === tc.expect.violation && got.action === tc.expect.action; 
+                return { name: tc.name, pass, got: { v: got.violation, a: got.action }, expect: tc.expect }; 
+            });
 
             const getTotalForPriority = (priority) => {
                 return Object.values(counters[priority] || {}).reduce((sum, count) => sum + count, 0);
@@ -474,8 +1539,341 @@
                             </div>
                         </div>
 
-                        {/* Moderation Actions Section */}
-                        <div className="space-y-4 mb-6">
+                        {/* AI Moderation Assistant Section - TOP POSITION */}
+                        <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
+                            <button onClick={() => setShowAI(!showAI)} className="w-full flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
+                                    <h3 className={`font-semibold ${textPrimary}`}>AI Moderation Assistant</h3>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-sm ${textSecondary}`}>{showAI ? 'Hide' : 'Show'}</span>
+                                    {showAI ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
+                                </div>
+                            </button>
+                            
+                            {showAI && (
+                                <div className="space-y-4">
+                                    {/* Admin note: GO Live and API Settings buttons removed for production */}
+
+                                    {/* Main AI Interface */}
+                                    <div className={`border rounded-lg overflow-hidden ${borderColor}`}>
+                                        <div className={`${darkMode ? 'bg-blue-900' : 'bg-blue-50'} px-3 py-2 border-b ${borderColor}`}>
+                                            <h4 className={`text-sm font-semibold ${darkMode ? 'text-blue-100' : 'text-slate-800'}`}>Analyze Post for Moderation</h4>
+                                        </div>
+                                        <div className={`p-3 space-y-3 ${darkMode ? 'bg-slate-900' : 'bg-white'}`}>
+                                            <div>
+                                                <label className={`block text-sm font-medium mb-1 ${textPrimary}`}>Post Content</label>
+                                                <textarea
+                                                    value={aiPost}
+                                                    onChange={(e) => setAiPost(e.target.value)}
+                                                    placeholder="Paste the post content here for AI analysis..."
+                                                    rows={4}
+                                                    className={`w-full px-3 py-2 text-sm border rounded resize-none ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`}
+                                                />
+                                            </div>
+                                            
+                                            <div className="flex items-end gap-3">
+                                                <div className="flex-1">
+                                                    <label className={`block text-sm font-medium mb-1 ${textPrimary}`}>Priority</label>
+                                                    <select
+                                                        value={aiPriority}
+                                                        onChange={(e) => setAiPriority(e.target.value)}
+                                                        className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}
+                                                    >
+                                                        {AI_PRIORITIES.map((p) => (
+                                                            <option key={p} value={p}>{p}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <button
+                                                    onClick={runAI}
+                                                    disabled={!aiPost.trim() || busySuggest}
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-medium ${
+                                                        !aiPost.trim() || busySuggest
+                                                            ? (darkMode ? 'bg-slate-700 text-slate-500' : 'bg-slate-200 text-slate-500')
+                                                            : (darkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white')
+                                                    }`}
+                                                >
+                                                    <Sparkles className="w-4 h-4" />
+                                                    {busySuggest ? "Analyzing..." : "Get AI Suggestion"}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* AI Suggestion Display */}
+                                    {aiSuggestion && (
+                                        <div className={`border rounded-lg overflow-hidden ${borderColor} ${darkMode ? 'bg-slate-800' : 'bg-white'}`}>
+                                            <div className={`${darkMode ? 'bg-purple-900' : 'bg-purple-50'} px-3 py-2 border-b ${borderColor}`}>
+                                                <h4 className={`text-sm font-semibold ${darkMode ? 'text-purple-100' : 'text-slate-800'}`}>AI Suggestion</h4>
+                                            </div>
+                                            <div className="p-3 space-y-3">
+                                                <div className="flex gap-2 flex-wrap">
+                                                    <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-slate-700 text-slate-200' : 'bg-slate-200 text-slate-700'}`}>
+                                                        Sentiment {aiSuggestion.sentiment}
+                                                    </span>
+                                                    <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-slate-700 text-slate-200' : 'bg-slate-200 text-slate-700'}`}>
+                                                        Violation: {aiSuggestion.violation}
+                                                    </span>
+                                                    <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-blue-700 text-blue-100' : 'bg-blue-100 text-blue-800'}`}>
+                                                        Suggested: {aiSuggestion.action}
+                                                    </span>
+                                                    {aiSuggestion.ban_length !== "None" && (
+                                                        <span className={`px-2 py-1 text-xs rounded ${darkMode ? 'bg-red-700 text-red-100' : 'bg-red-100 text-red-800'}`}>
+                                                            Ban: {aiSuggestion.ban_length}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                
+                                                <div>
+                                                    <p className={`text-xs font-medium mb-1 ${textPrimary}`}>Rationale</p>
+                                                    <p className={`text-sm ${textSecondary}`}>{aiSuggestion.rationale}</p>
+                                                </div>
+                                                
+                                                {aiSuggestion.message_to_user && (
+                                                    <div>
+                                                        <p className={`text-xs font-medium mb-1 ${textPrimary}`}>Message to User (Draft)</p>
+                                                        <p className={`text-sm ${textSecondary}`}>{aiSuggestion.message_to_user}</p>
+                                                    </div>
+                                                )}
+                                                
+                                                <div className={`border-t pt-3 ${borderColor}`}>
+                                                    <div className="flex items-end gap-3">
+                                                        <div className="flex-1">
+                                                            <label className={`block text-xs font-medium mb-1 ${textPrimary}`}>
+                                                                Action You Took <span className="text-red-500">*</span>
+                                                            </label>
+                                                            <select
+                                                                value={aiFinalAction}
+                                                                onChange={(e) => setAiFinalAction(e.target.value)}
+                                                                className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}
+                                                            >
+                                                                <option value="">Select action...</option>
+                                                                {AI_ACTIONS.map((a) => (
+                                                                    <option key={a} value={a}>{a}</option>
+                                                                ))}
+                                                            </select>
+                                                        </div>
+                                                        <button
+                                                            onClick={closeAI}
+                                                            disabled={!aiFinalAction}
+                                                            className={`flex items-center gap-2 px-4 py-2 rounded text-sm font-medium ${
+                                                                !aiFinalAction
+                                                                    ? (darkMode ? 'bg-slate-700 text-slate-500' : 'bg-slate-200 text-slate-500')
+                                                                    : (darkMode ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-green-600 hover:bg-green-700 text-white')
+                                                            }`}
+                                                        >
+                                                            <Check className="w-4 h-4" />
+                                                            Complete & Track
+                                                        </button>
+                                                    </div>
+                                                    <p className={`text-xs mt-2 ${textSecondary}`}>
+                                                        <strong>This will automatically:</strong> ✓ Update your main P1-P4 counters above ✓ Track AI interaction for learning
+                                                        {aiPriority === "P5" && <span className="text-orange-500"> (P5 mapped to P4 counter)</span>}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Tabs for Learning Data and Tests */}
+                                    <div>
+                                        <div className="flex border-b">
+                                            <button
+                                                onClick={() => setAiActiveTab("learning")}
+                                                className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                                                    aiActiveTab === "learning"
+                                                        ? `border-blue-500 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`
+                                                        : `border-transparent ${textSecondary} hover:${textPrimary}`
+                                                }`}
+                                            >
+                                                Notes ({groundTruthNotes.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setAiActiveTab("history")}
+                                                className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                                                    aiActiveTab === "history"
+                                                        ? `border-blue-500 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`
+                                                        : `border-transparent ${textSecondary} hover:${textPrimary}`
+                                                }`}
+                                            >
+                                                AI History ({aiSaved.length})
+                                            </button>
+                                            <button
+                                                onClick={() => setAiActiveTab("tests")}
+                                                className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                                                    aiActiveTab === "tests"
+                                                        ? `border-blue-500 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`
+                                                        : `border-transparent ${textSecondary} hover:${textPrimary}`
+                                                }`}
+                                            >
+                                                Dev Tests
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="mt-3">
+                                            {aiActiveTab === "learning" && (
+                                                <div className="space-y-2">
+                                                    {groundTruthNotes.length === 0 ? (
+                                                        <p className={`text-sm ${textSecondary}`}>
+                                                            No overrides yet. When your action differs from AI suggestions, learning notes appear here.
+                                                        </p>
+                                                    ) : (
+                                                        <div className="space-y-1">
+                                                            {groundTruthNotes.map((note, i) => (
+                                                                <div key={i} className={`text-xs p-2 rounded ${darkMode ? 'bg-slate-700 text-slate-300' : 'bg-slate-100 text-slate-700'}`}>
+                                                                    {note}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            
+                                            {aiActiveTab === "history" && (
+                                                <div className="space-y-2">
+                                                    {aiSaved.length === 0 ? (
+                                                        <p className={`text-sm ${textSecondary}`}>No AI interactions yet.</p>
+                                                    ) : (
+                                                        <>
+                                                            {/* Learning Analytics */}
+                                                            {aiSaved.length > 0 && (
+                                                                <div className={`p-3 rounded text-xs border space-y-2 ${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
+                                                                    {(() => {
+                                                                        const total = aiSaved.length;
+                                                                        const matches = aiSaved.filter(r => r.accuracy?.action_match).length;
+                                                                        const accuracy = total > 0 ? Math.round((matches / total) * 100) : 0;
+                                                                        const patterns = analyzeLearningPatterns();
+                                                                        
+                                                                        return (
+                                                                            <>
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className={`font-medium ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+                                                                                        AI Accuracy: {accuracy}% ({matches}/{total} matches)
+                                                                                    </span>
+                                                                                    <span className={`px-2 py-1 rounded ${
+                                                                                        accuracy >= 80 
+                                                                                            ? (darkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800')
+                                                                                            : accuracy >= 60
+                                                                                            ? (darkMode ? 'bg-yellow-800 text-yellow-200' : 'bg-yellow-100 text-yellow-800')
+                                                                                            : (darkMode ? 'bg-red-800 text-red-200' : 'bg-red-100 text-red-800')
+                                                                                    }`}>
+                                                                                        {accuracy >= 80 ? 'Excellent' : accuracy >= 60 ? 'Good' : 'Learning'}
+                                                                                    </span>
+                                                                                </div>
+                                                                                
+                                                                                {patterns && Object.keys(patterns.commonOverrides).length > 0 && (
+                                                                                    <div>
+                                                                                        <div className={`font-medium mb-1 ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+                                                                                            🧠 Learning Patterns:
+                                                                                        </div>
+                                                                                        <div className="space-y-1">
+                                                                                            {Object.entries(patterns.commonOverrides).slice(0, 3).map(([pattern, count]) => (
+                                                                                                <div key={pattern} className={`flex items-center justify-between ${textSecondary}`}>
+                                                                                                    <span>AI suggests {pattern.split('→')[0]} → You choose {pattern.split('→')[1]}</span>
+                                                                                                    <span className={`px-1 rounded ${darkMode ? 'bg-slate-700' : 'bg-slate-200'}`}>{count}x</span>
+                                                                                                </div>
+                                                                                            ))}
+                                                                                        </div>
+                                                                                        <div className={`mt-2 text-xs ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                                                                                            💡 AI is automatically adapting to these patterns
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )}
+                                                                            </>
+                                                                        );
+                                                                    })()}
+                                                                </div>
+                                                            )}
+                                                            
+                                                            {/* History List */}
+                                                            <div className="space-y-2">
+                                                                {aiSaved.slice(0, 5).map((record) => (
+                                                                    <div key={record.id} className={`p-2 rounded text-xs border ${darkMode ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className={`font-medium ${textPrimary}`}>
+                                                                                {record.priority} - {record.final_action}
+                                                                                {record.ai && record.ai.action !== record.final_action && (
+                                                                                    <span className={`ml-2 px-1 rounded ${darkMode ? 'bg-yellow-800 text-yellow-200' : 'bg-yellow-200 text-yellow-800'}`}>
+                                                                                        Override
+                                                                                    </span>
+                                                                                )}
+                                                                                {record.accuracy?.action_match && (
+                                                                                    <span className={`ml-2 px-1 rounded ${darkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800'}`}>
+                                                                                        ✓
+                                                                                    </span>
+                                                                                )}
+                                                                            </span>
+                                                                            <button
+                                                                                onClick={() => removeAiRecord(record.id)}
+                                                                                className={`p-1 hover:bg-red-100 rounded ${textSecondary}`}
+                                                                            >
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                        <p className={`mt-1 ${textSecondary} truncate`}>{record.post_text}</p>
+                                                                        {record.counter_updated && (
+                                                                            <p className={`mt-1 text-xs ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                                                                                → Updated {record.counter_updated} counter
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                                {aiSaved.length > 5 && (
+                                                                    <p className={`text-xs ${textSecondary}`}>... and {aiSaved.length - 5} more</p>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                            
+                                            {aiActiveTab === "tests" && (
+                                                <div className="space-y-2">
+                                                    {runDevTests().map((result) => (
+                                                        <div key={result.name} className={`flex items-center justify-between p-2 rounded text-xs ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                                                            <span className={`font-medium ${textPrimary}`}>{result.name}</span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={textSecondary}>
+                                                                    {result.got.v}/{result.got.a}
+                                                                </span>
+                                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                                    result.pass 
+                                                                        ? (darkMode ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-800')
+                                                                        : (darkMode ? 'bg-red-800 text-red-200' : 'bg-red-100 text-red-800')
+                                                                }`}>
+                                                                    {result.pass ? "✓" : "✗"}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Moderation Processes and Workflows Section - COLLAPSED BY DEFAULT */}
+                        <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
+                            <button onClick={() => setShowWorkflows(!showWorkflows)} className="w-full flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                        </svg>
+                                    </div>
+                                    <h3 className={`font-bold text-lg ${textPrimary}`}>Moderation Processes and Workflows</h3>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-sm ${textSecondary}`}>{showWorkflows ? 'Hide' : 'Show'}</span>
+                                    {showWorkflows ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
+                                </div>
+                            </button>
+                            {showWorkflows && (
+                                <div className="space-y-4 mt-4">
                             {moderationActions.map((action) => {
                                 const isActive = activeAction === action.id;
                                 return (
@@ -502,7 +1900,10 @@
                                     </div>
                                 );
                             })}
+                                </div>
+                            )}
                         </div>
+
 
                         {/* Ban Templates Section - COLLAPSED BY DEFAULT */}
                         <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
@@ -521,6 +1922,16 @@
                                             <button onClick={() => clearTemplateInputs('banCombined')} className={`px-3 py-1 rounded text-xs font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-300 hover:bg-slate-400 text-slate-700'}`}>Clear</button>
                                             <button onClick={() => copyToClipboard(getPopulatedTemplate('banCombined', ''), 'banCombined')} className="flex items-center gap-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm font-medium">
                                                 {copiedId === 'banCombined' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {/* URL scraping section for ban template */}
+                                    <div className={`${darkMode ? 'bg-slate-800 border-slate-600' : 'bg-orange-50 border-orange-200'} border-2 p-3 m-3 rounded`}>
+                                        <div className={`text-xs font-semibold mb-2 ${textSecondary}`}>🕷️ Extract Post Info (Optional)</div>
+                                        <div className="flex gap-2">
+                                            <input type="url" placeholder="eBay community post URL..." value={templateInputs.banCombined?.url || ''} onChange={(e) => updateTemplateInput('banCombined', 'url', e.target.value)} className={`flex-1 px-3 py-2 text-xs border rounded ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'bg-white border-slate-300'}`} />
+                                            <button onClick={() => scrapeForTemplate(templateInputs.banCombined?.url || '', 'banCombined')} disabled={isScrapingLoading || !templateInputs.banCombined?.url?.trim()} className={`px-3 py-2 text-xs font-medium rounded ${isScrapingLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'} text-white`}>
+                                                {isScrapingLoading ? 'Extracting...' : 'Extract Post Info'}
                                             </button>
                                         </div>
                                     </div>
@@ -593,6 +2004,16 @@
                                                                         <div className={`text-xs font-semibold ${textSecondary}`}>Fill fields</div>
                                                                         <button onClick={() => clearTemplateInputs(template.id)} className={`px-3 py-1 rounded text-xs font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-300 hover:bg-slate-400 text-slate-700'}`}>Clear</button>
                                                                     </div>
+                                                                    {/* URL scraping section for each template */}
+                                                                    <div className={`p-3 rounded border-2 ${darkMode ? 'bg-slate-800 border-slate-600' : 'bg-orange-50 border-orange-200'} mb-3`}>
+                                                                        <div className={`text-xs font-semibold mb-2 ${textSecondary}`}>🕷️ Extract Post Info (Optional)</div>
+                                                                        <div className="flex gap-2">
+                                                                            <input type="url" placeholder="eBay community post URL..." value={templateInputs[template.id]?.url || ''} onChange={(e) => updateTemplateInput(template.id, 'url', e.target.value)} className={`flex-1 px-3 py-2 text-xs border rounded ${darkMode ? 'bg-slate-700 border-slate-600 text-slate-200 placeholder-slate-400' : 'bg-white border-slate-300'}`} />
+                                                                            <button onClick={() => scrapeForTemplate(templateInputs[template.id]?.url || '', template.id)} disabled={isScrapingLoading || !templateInputs[template.id]?.url?.trim()} className={`px-3 py-2 text-xs font-medium rounded ${isScrapingLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-orange-600 hover:bg-orange-700'} text-white`}>
+                                                                                {isScrapingLoading ? 'Extracting...' : 'Extract Post Info'}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
                                                                     <input type="text" placeholder="USERNAME" value={templateInputs[template.id]?.username || ''} onChange={(e) => updateTemplateInput(template.id, 'username', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                                                     {template.type === 'removed' && (
                                                                         <>
@@ -605,7 +2026,40 @@
                                                                     )}
                                                                     {template.type !== 'username' && (
                                                                         <>
-                                                                            <input type="text" placeholder="GUIDELINES" value={templateInputs[template.id]?.guidelines || ''} onChange={(e) => updateTemplateInput(template.id, 'guidelines', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                            <div className="space-y-2">
+                                                                                <div className="flex gap-2">
+                                                                                    <select onChange={(e) => { if (e.target.value) { selectGuideline(template.id, e.target.value); e.target.value = ''; } }} defaultValue="" className={`flex-1 px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}>
+                                                                                        <option value="">Select Violated Guideline...</option>
+                                                                                        <optgroup label="General Guidelines">
+                                                                                            <option value="gg01">GG01: Be respectful</option>
+                                                                                            <option value="gg02">GG02: Meaningful contributions</option>
+                                                                                            <option value="gg03">GG03: Consequences</option>
+                                                                                            <option value="gg04">GG04: Reporting Content</option>
+                                                                                            <option value="gg05">GG05: Personal info</option>
+                                                                                        </optgroup>
+                                                                                        <optgroup label="Specific Guidelines">
+                                                                                            <option value="sg00">SG00: Refrain from</option>
+                                                                                            <option value="sg01">SG01: Adult content</option>
+                                                                                            <option value="sg02">SG02: Threats</option>
+                                                                                            <option value="sg03">SG03: Dishonest</option>
+                                                                                            <option value="sg04">SG04: Duplicative</option>
+                                                                                            <option value="sg05">SG05: Activism</option>
+                                                                                            <option value="sg06">SG06: Advertising</option>
+                                                                                            <option value="sg07">SG07: Off-eBay sites</option>
+                                                                                            <option value="sg08">SG08: Reposted content</option>
+                                                                                            <option value="sg09">SG09: Mod warnings</option>
+                                                                                            <option value="sg10">SG10: Naming/shaming</option>
+                                                                                            <option value="sg11">SG11: Policy violations</option>
+                                                                                            <option value="sg12">SG12: Copyright</option>
+                                                                                        </optgroup>
+                                                                                        <optgroup label="Custom">
+                                                                                            <option value="other">✏️ Other (type custom violation)</option>
+                                                                                        </optgroup>
+                                                                                    </select>
+                                                                                    <button onClick={() => updateTemplateInput(template.id, 'guidelines', '')} className={`px-3 py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`}>Clear</button>
+                                                                                </div>
+                                                                                <input type="text" placeholder="GUIDELINES (select from dropdown or type custom violation)" value={templateInputs[template.id]?.guidelines || ''} onChange={(e) => updateTemplateInput(template.id, 'guidelines', e.target.value)} data-template-id={template.id} data-field="guidelines" className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                            </div>
                                                                             <textarea placeholder="QUOTE" value={templateInputs[template.id]?.quote || ''} onChange={(e) => updateTemplateInput(template.id, 'quote', e.target.value)} rows={3} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                                                         </>
                                                                     )}
@@ -624,21 +2078,54 @@
                             )}
                         </div>
 
-                        {/* Ban Templates Section - COLLAPSED BY DEFAULT */}
+                        {/* Guidelines Section - COLLAPSED BY DEFAULT */}
                         <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
-                            <button onClick={() => setShowBanTemplates(!showBanTemplates)} className="w-full flex items-center justify-between mb-3">
-                                <h3 className={`font-semibold ${textPrimary}`}>Ban Templates</h3>
+                            <button onClick={() => setShowGuidelines(!showGuidelines)} className="w-full flex items-center justify-between mb-3">
+                                <h3 className={`font-semibold ${textPrimary}`}>Guidelines</h3>
                                 <div className="flex items-center gap-2">
-                                    <span className={`text-sm ${textSecondary}`}>{showBanTemplates ? 'Hide' : 'Show'}</span>
-                                    {showBanTemplates ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
+                                    <span className={`text-sm ${textSecondary}`}>{showGuidelines ? 'Hide' : 'Show'}</span>
+                                    {showGuidelines ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
                                 </div>
                             </button>
-                            {showBanTemplates && (
-                                <div className="space-y-2">
-                                    <div className="p-4 bg-orange-50 rounded-lg">
-                                        <p className="text-sm text-orange-800">Ban template content would go here...</p>
+                            {showGuidelines && (
+                                <>
+                                    <div className="mb-3">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search guidelines..." 
+                                            value={guidelinesSearch} 
+                                            onChange={(e) => setGuidelinesSearch(e.target.value)}
+                                            className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`}
+                                        />
                                     </div>
+                                <div className="space-y-2">
+                                        {guidelinesList.filter(guideline => 
+                                            guideline.name.toLowerCase().includes(guidelinesSearch.toLowerCase())
+                                        ).map((guideline) => {
+                                            const isExpanded = expandedGuidelines[guideline.id];
+                                            return (
+                                                <div key={guideline.id} className={`border rounded-lg overflow-hidden ${borderColor}`}>
+                                                    <div className={`${darkMode ? 'bg-slate-700' : 'bg-slate-100'} px-3 py-2 flex items-center justify-between border-b ${borderColor}`}>
+                                                        <span className={`text-sm font-semibold ${textPrimary}`}>{guideline.name}</span>
+                                                        <div className="flex gap-2">
+                                                            <button onClick={() => copyToClipboard(guideline.content, guideline.id)} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
+                                                                {copiedId === guideline.id ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
+                                                            </button>
+                                                            <button onClick={() => setExpandedGuidelines({...expandedGuidelines, [guideline.id]: !isExpanded})} className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>
+                                                                {isExpanded ? (<><ChevronUp className="w-4 h-4" />Hide</>) : (<><ChevronDown className="w-4 h-4" />Show</>)}
+                                                            </button>
+                                    </div>
+                                                    </div>
+                                                    {isExpanded && (
+                                                        <div className={`${cardBg} p-3`}>
+                                                            <pre className={`text-xs ${textSecondary} whitespace-pre-wrap font-mono`}>{guideline.content}</pre>
                                 </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </>
                             )}
                         </div>
 
@@ -662,7 +2149,40 @@
                                 <div className={`space-y-3 pt-3 border-t ${borderColor}`}>
                                     <input type="text" placeholder="Link to post" value={adminNoteInputs.edited.link} onChange={(e) => updateAdminNoteInput('edited', 'link', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                     <input type="text" placeholder="Removed portion" value={adminNoteInputs.edited.removed} onChange={(e) => updateAdminNoteInput('edited', 'removed', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
-                                    <input type="text" placeholder="Rule violation" value={adminNoteInputs.edited.violation} onChange={(e) => updateAdminNoteInput('edited', 'violation', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                    <div className="space-y-2">
+                                        <div className="flex gap-2">
+                                            <select onChange={(e) => { if (e.target.value) { selectAdminNoteViolation(e.target.value); e.target.value = ''; } }} defaultValue="" className={`flex-1 px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}>
+                                                <option value="">Select Violated Guideline...</option>
+                                                <optgroup label="General Guidelines">
+                                                    <option value="gg01">GG01: Be respectful</option>
+                                                    <option value="gg02">GG02: Meaningful contributions</option>
+                                                    <option value="gg03">GG03: Consequences</option>
+                                                    <option value="gg04">GG04: Reporting Content</option>
+                                                    <option value="gg05">GG05: Personal info</option>
+                                                </optgroup>
+                                                <optgroup label="Specific Guidelines">
+                                                    <option value="sg00">SG00: Refrain from</option>
+                                                    <option value="sg01">SG01: Adult content</option>
+                                                    <option value="sg02">SG02: Threats</option>
+                                                    <option value="sg03">SG03: Dishonest</option>
+                                                    <option value="sg04">SG04: Duplicative</option>
+                                                    <option value="sg05">SG05: Activism</option>
+                                                    <option value="sg06">SG06: Advertising</option>
+                                                    <option value="sg07">SG07: Off-eBay sites</option>
+                                                    <option value="sg08">SG08: Reposted content</option>
+                                                    <option value="sg09">SG09: Mod warnings</option>
+                                                    <option value="sg10">SG10: Naming/shaming</option>
+                                                    <option value="sg11">SG11: Policy violations</option>
+                                                    <option value="sg12">SG12: Copyright</option>
+                                                </optgroup>
+                                                <optgroup label="Custom">
+                                                    <option value="other">✏️ Other (type custom violation)</option>
+                                                </optgroup>
+                                            </select>
+                                            <button onClick={() => updateAdminNoteInput('edited', 'violation', '')} className={`px-3 py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`}>Clear</button>
+                                        </div>
+                                        <input type="text" placeholder="Rule violation (select from dropdown or type custom)" value={adminNoteInputs.edited.violation} onChange={(e) => updateAdminNoteInput('edited', 'violation', e.target.value)} data-admin-field="violation" className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                    </div>
                                     <div className={`rounded-lg p-3 border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                                         <pre className={`text-xs whitespace-pre-wrap font-mono ${textSecondary}`}>{getPopulatedAdminNote('edited')}</pre>
                                     </div>
@@ -698,10 +2218,11 @@
                             )}
                         </div>
 
+
                         {/* Footer */}
                         <div className={`rounded-lg shadow p-4 text-center text-sm ${cardBg} ${textSecondary} border ${borderColor}`}>
-                            <p>Contact: <a href="mailto:tuna.yilmaz@ignitetech.ai" className="text-blue-600 underline">tuna.yilmaz@ignitetech.ai</a> or <a href="mailto:c-tuna.yilmaz@khoros.com" className="text-blue-600 underline">c-tuna.yilmaz@khoros.com</a></p>
-                            <p className="mt-2 text-xs">Version: 1.2.1</p>
+                        <p>Contact: <a href="mailto:tuna.yilmaz@ignitetech.ai" className="text-blue-600 underline">tuna.yilmaz@ignitetech.ai</a>, <a href="mailto:c-tuna.yilmaz@khoros.com" className="text-blue-600 underline">c-tuna.yilmaz@khoros.com</a>, <a href="mailto:lightattah@ignitetech.com" className="text-blue-600 underline">lightattah@ignitetech.com</a> or <a href="mailto:c-light.attah@khoros.com" className="text-blue-600 underline">c-light.attah@khoros.com</a></p>
+                        <p className="mt-2 text-xs">Version 2.0.0</p>
                         </div>
                     </div>
 
