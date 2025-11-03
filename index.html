@@ -310,20 +310,34 @@ eBay Community Guidelines - Key Violations:
 - Threats, adult content, or illegal activities
 - Misinformation or misleading content`;
 
-                // Get learning context
-                            const learningData = analyzeLearningPatterns();
+                // Get global learning context
                 let learningContext = "";
-                            
-                            if (learningData && aiSaved.length >= 3) {
-                    learningContext += `\nLearning Context:\n- Current accuracy: ${100 - learningData.overrideRate}%\n`;
-                                
-                                if (Object.keys(learningData.commonOverrides).length > 0) {
-                        learningContext += "- Recent corrections:\n";
-                                    Object.entries(learningData.commonOverrides).slice(0, 3).forEach(([pattern, count]) => {
-                            learningContext += `  • ${pattern} (${count}x)\n`;
-                                    });
-                                }
-                            }
+                try {
+                    const response = await fetch('/api/learning-patterns/summary');
+                    if (response.ok) {
+                        const summary = await response.json();
+                        if (summary.totalAnalyses > 0) {
+                            learningContext = `\nGlobal Team Learning Context (${summary.totalAnalyses} interactions):
+- Team accuracy: ${summary.globalAccuracy}%
+- Common corrections: ${summary.commonCorrections.join(', ')}
+- Top override patterns: ${summary.topOverrides.join(', ')}
+- Last updated: ${new Date(summary.lastUpdated).toLocaleString()}`;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch global learning context:', error);
+                    // Fallback to local learning if server unavailable
+                    const learningData = analyzeLearningPatterns();
+                    if (learningData && aiSaved.length >= 3) {
+                        learningContext += `\nLocal Learning Context:\n- Local accuracy: ${100 - learningData.overrideRate}%\n`;
+                        if (Object.keys(learningData.commonOverrides).length > 0) {
+                            learningContext += "- Local corrections:\n";
+                            Object.entries(learningData.commonOverrides).slice(0, 3).forEach(([pattern, count]) => {
+                                learningContext += `  • ${pattern} (${count}x)\n`;
+                            });
+                        }
+                    }
+                }
                             
                 // Direct Claude API call
                 const response = await fetch(`${baseUrl}/messages`, {
@@ -766,12 +780,31 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 return patterns;
             };
 
-            // Enhanced local AI that learns from user corrections
-            const enhancedLocalSuggest = (post, priority) => {
+            // Enhanced local AI that learns from user corrections (with global fallback)
+            const enhancedLocalSuggest = async (post, priority) => {
                 let suggestion = localSuggest(post, priority);
-                const patterns = analyzeLearningPatterns();
                 
-                if (patterns && aiSaved.length >= 5) {
+                // Try to get global learning patterns first
+                let patterns = null;
+                try {
+                    const response = await fetch('/api/learning-patterns');
+                    if (response.ok) {
+                        const globalPatterns = await response.json();
+                        patterns = {
+                            overrideRate: 100 - globalPatterns.globalStats.accuracy,
+                            commonOverrides: globalPatterns.overridePatterns,
+                            violationAccuracy: globalPatterns.violationAccuracy,
+                            isGlobal: true
+                        };
+                        console.log(`🌐 Using global learning patterns (${globalPatterns.globalStats.totalAnalyses} team interactions)`);
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch global patterns, using local:', error);
+                    patterns = analyzeLearningPatterns();
+                    if (patterns) patterns.isGlobal = false;
+                }
+                
+                if (patterns && (patterns.isGlobal || aiSaved.length >= 5)) {
                     // Adjust based on learning patterns
                     const overrideRate = patterns.overrideRate;
                     
@@ -942,7 +975,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                         setLiveStatus("ready");
                         console.log("✅ AI API Success:", suggestion);
                     } else {
-                        suggestion = enhancedLocalSuggest(aiPost, aiPriority);
+                        suggestion = await enhancedLocalSuggest(aiPost, aiPriority);
                         setLiveStatus("offline");
                         console.log("🔧 Enhanced Local AI Analysis:", suggestion);
                     }
@@ -956,7 +989,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 } catch (e) {
                     console.error("❌ AI Error:", e);
                     // Fallback to enhanced learning local analysis with error context
-                    const fallback = enhancedLocalSuggest(aiPost, aiPriority);
+                    const fallback = await enhancedLocalSuggest(aiPost, aiPriority);
                     fallback.admin_note = `API Error (${e.message}) - Using enhanced local fallback with learning`;
                     setAiSuggestion(fallback);
                     setLiveStatus("error");
@@ -1009,6 +1042,15 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     const isCorrectAction = aiSuggestion.action === aiFinalAction;
                     const isCorrectViolation = aiSuggestion.violation !== "None";
                     
+                    // Record global learning interaction for cross-user intelligence
+                    await recordGlobalLearningInteraction(
+                        aiPost,
+                        aiPriority,
+                        aiSuggestion,
+                        aiFinalAction,
+                        isCorrectAction
+                    );
+                    
                     // Save AI interaction for learning
                     const rec = { 
                         id: uid(), 
@@ -1022,7 +1064,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                             action_match: isCorrectAction,
                             violation_detected: isCorrectViolation
                         },
-                        timestamp: new Date().toISOString() 
+                        timestamp: new Date().toISOString()
                     };
                     setAiSaved((s) => [rec, ...s]);
                     
@@ -1060,6 +1102,44 @@ Provide your analysis in the exact JSON format specified in your instructions.`
 
             const removeAiRecord = (id) => setAiSaved((s) => s.filter((r) => r.id !== id));
 
+            // Global learning functions
+            const recordGlobalLearningInteraction = async (postContent, priority, aiAnalysis, userAction, wasCorrect) => {
+                try {
+                    const sessionId = localStorage.getItem('ebay-mod-session-id') || 
+                        `user_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+                    
+                    if (!localStorage.getItem('ebay-mod-session-id')) {
+                        localStorage.setItem('ebay-mod-session-id', sessionId);
+                    }
+
+                    const response = await fetch('/api/learning-patterns/interaction', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            postContent,
+                            priority,
+                            aiViolation: aiAnalysis?.violation || 'Unknown',
+                            aiAction: aiAnalysis?.action || 'Unknown',
+                            userAction,
+                            wasCorrect,
+                            sessionId
+                        })
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log(`✅ Global learning updated: Team accuracy now ${result.globalAccuracy}% (${result.totalAnalyses} total)`);
+                    } else {
+                        console.warn('Failed to record global learning interaction');
+                    }
+                } catch (error) {
+                    console.warn('Could not record global learning interaction:', error);
+                    // Continue with local learning as fallback
+                }
+            };
+
             const configureApi = () => {
                 const key = prompt("Claude API Key (from Anthropic Console)", apiKey || "sk-ant-api03-...");
                 if (key !== null) {
@@ -1095,11 +1175,15 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 { name: "P1 clean post → Minor (escalated)", post: "This is a normal question about shipping.", priority: "P1", expect: { violation: "Minor", action: "NAR" } }
             ];
             
-            const runDevTests = () => testCases.map((tc) => { 
-                const got = enhancedLocalSuggest(tc.post, tc.priority); 
-                const pass = got.violation === tc.expect.violation && got.action === tc.expect.action; 
-                return { name: tc.name, pass, got: { v: got.violation, a: got.action }, expect: tc.expect }; 
-            });
+            const runDevTests = async () => {
+                const results = [];
+                for (const tc of testCases) {
+                    const got = await enhancedLocalSuggest(tc.post, tc.priority); 
+                    const pass = got.violation === tc.expect.violation && got.action === tc.expect.action; 
+                    results.push({ name: tc.name, pass, got: { v: got.violation, a: got.action }, expect: tc.expect });
+                }
+                return results;
+            };
 
             const getTotalForPriority = (priority) => {
                 return Object.values(counters[priority] || {}).reduce((sum, count) => sum + count, 0);

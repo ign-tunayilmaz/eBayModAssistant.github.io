@@ -73,6 +73,70 @@ const ModerationTool = () => {
 
   const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
 
+  // Global Learning System Functions
+  const getGlobalLearningContext = async () => {
+    try {
+      const response = await fetch('/api/learning-patterns/summary');
+      if (response.ok) {
+        const summary = await response.json();
+        if (summary.totalAnalyses > 0) {
+          return `\nGlobal Learning Context (from ${summary.totalAnalyses} team interactions):
+- Team accuracy: ${summary.globalAccuracy}%
+- Common corrections: ${summary.commonCorrections.join(', ')}
+- Top override patterns: ${summary.topOverrides.join(', ')}
+- Last updated: ${new Date(summary.lastUpdated).toLocaleString()}`;
+        }
+      }
+    } catch (error) {
+      console.warn('Could not fetch global learning context:', error);
+    }
+    return '';
+  };
+
+  const recordGlobalLearningInteraction = async (postContent, priority, aiAnalysis, userAction, wasCorrect) => {
+    try {
+      const sessionId = localStorage.getItem('ebay-mod-session-id') || 
+        `user_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      
+      if (!localStorage.getItem('ebay-mod-session-id')) {
+        localStorage.setItem('ebay-mod-session-id', sessionId);
+      }
+
+      const response = await fetch('/api/learning-patterns/interaction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          postContent,
+          priority,
+          aiViolation: aiAnalysis?.violation || 'Unknown',
+          aiAction: aiAnalysis?.action || 'Unknown',
+          userAction,
+          wasCorrect,
+          sessionId
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✅ Global learning updated: Team accuracy now ${result.globalAccuracy}% (${result.totalAnalyses} total)`);
+        
+        // Update local learning data with global stats
+        setLearningData(prev => ({
+          ...prev,
+          globalAccuracy: result.globalAccuracy,
+          globalAnalyses: result.totalAnalyses
+        }));
+      } else {
+        console.warn('Failed to record global learning interaction');
+      }
+    } catch (error) {
+      console.warn('Could not record global learning interaction:', error);
+      // Continue with local learning as fallback
+    }
+  };
+
   // Claude AI Assistant Functions
   const analyzePost = async (content, priority) => {
     if (!aiSettings.apiKey || !aiSettings.isActive) {
@@ -127,7 +191,7 @@ Consider context, user intent, and severity when making recommendations. Priorit
             
 Post Content: "${content}"
 
-Learning Context: ${JSON.stringify(learningData.patterns)}
+Learning Context: ${await getGlobalLearningContext()}
 
 Analyze this eBay community post and provide a moderation recommendation. Consider the priority level and any patterns from previous moderation decisions.`
           }]
@@ -177,6 +241,15 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
             totalAnalyses: prev.totalAnalyses + 1
           }));
 
+          // Record this AI analysis globally (will be confirmed/overridden later)
+          await recordGlobalLearningInteraction(
+            content,
+            priority,
+            analysis,
+            analysis.action, // Initially assume AI is correct
+            true // Will be updated if user overrides
+          );
+
     } catch (error) {
       console.error('Claude Analysis Error:', error);
       alert(`Claude AI Analysis failed: ${error.message}`);
@@ -185,18 +258,32 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
     }
   };
 
-  const recordUserOverride = (analysisId, userAction, wasCorrect) => {
+  const recordUserOverride = async (analysisId, userAction, wasCorrect) => {
+    // Update local history
     setAiHistory(prev => prev.map(record => 
       record.id === analysisId 
         ? { ...record, userOverride: userAction, isCorrect: wasCorrect }
         : record
     ));
 
+    // Update local learning data
     setLearningData(prev => ({
       ...prev,
       correctPredictions: wasCorrect ? prev.correctPredictions + 1 : prev.correctPredictions,
       overrides: [...prev.overrides, { analysisId, userAction, timestamp: new Date().toISOString() }].slice(-100)
     }));
+
+    // Record globally for cross-user learning
+    const record = aiHistory.find(r => r.id === analysisId);
+    if (record) {
+      await recordGlobalLearningInteraction(
+        record.content,
+        record.priority, 
+        record.analysis,
+        userAction,
+        wasCorrect
+      );
+    }
   };
 
   // Training data collection for AI improvement (simple localStorage approach)
