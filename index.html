@@ -282,121 +282,81 @@
             };
 
             const callModerationAPI = async ({ baseUrl, apiKey, post_text, priority }) => {
-                // OpenAI Assistant API integration
-                const assistantId = localStorage.getItem('ebay-mod-assistant-id') || '';
-                
-                if (!assistantId) {
-                    throw new Error("Assistant ID not configured. Please set up your OpenAI Assistant first.");
+                // Claude AI integration
+                if (!apiKey) {
+                    throw new Error("Claude API key not configured. Please check your settings.");
                 }
 
-                // Create a thread for this moderation request
-                const threadRes = await fetch(`${baseUrl}/threads`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${apiKey}`,
-                        "OpenAI-Beta": "assistants=v2"
-                    },
-                    body: JSON.stringify({})
-                });
-                
-                if (!threadRes.ok) throw new Error(`Thread creation failed: ${threadRes.status}`);
-                const thread = await threadRes.json();
+                // Claude system prompt for eBay moderation
+                const systemPrompt = `You are an expert eBay Community Moderation Assistant trained on official eBay Community Guidelines and professional moderation practices.
 
-                // Add message to thread
-                const messageRes = await fetch(`${baseUrl}/threads/${thread.id}/messages`, {
-                    method: "POST", 
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${apiKey}`,
-                        "OpenAI-Beta": "assistants=v2"
-                    },
-                    body: JSON.stringify({
-                        role: "user",
-                        content: `Please analyze this eBay Community post for moderation:\n\nPost: "${post_text}"\nPriority: ${priority}\n\n${(() => {
-                            // Include learning context if available
+ALWAYS respond with valid JSON in this exact format:
+{
+  "violation": "Severe|Moderate|Minor|None",
+  "action": "Ban|Remove|Edit|Steer|NAR",
+  "sentiment": "😠|😐|😊",
+  "rationale": "Brief explanation of why this action is recommended",
+  "ban_length": "1 Day|3 Days|7 Days|30 Days|Indefinite|None",
+  "message_to_user": "Template message for user notification",
+  "admin_note": "Internal note for moderation log"
+}
+
+eBay Community Guidelines - Key Violations:
+- Spam, advertising, or promotional content
+- Profanity, harassment, or offensive language
+- Personal information sharing (emails, phones, addresses)
+- Off-topic discussions or necroposting (6+ months old)
+- Duplicate posts or repetitive content
+- Threats, adult content, or illegal activities
+- Misinformation or misleading content`;
+
+                // Get learning context
                             const learningData = analyzeLearningPatterns();
-                            let context = "";
+                let learningContext = "";
                             
                             if (learningData && aiSaved.length >= 3) {
-                                context += `\nLearning Context:\n- Current accuracy: ${100 - learningData.overrideRate}%\n`;
+                    learningContext += `\nLearning Context:\n- Current accuracy: ${100 - learningData.overrideRate}%\n`;
                                 
                                 if (Object.keys(learningData.commonOverrides).length > 0) {
-                                    context += "- Recent corrections:\n";
+                        learningContext += "- Recent corrections:\n";
                                     Object.entries(learningData.commonOverrides).slice(0, 3).forEach(([pattern, count]) => {
-                                        context += `  • ${pattern} (${count}x)\n`;
+                            learningContext += `  • ${pattern} (${count}x)\n`;
                                     });
                                 }
                             }
                             
-                            return context;
-                        })()}\n\nProvide your analysis in the exact JSON format specified in your instructions.`
-                    })
-                });
-
-                if (!messageRes.ok) throw new Error(`Message creation failed: ${messageRes.status}`);
-
-                // Run the assistant
-                const runRes = await fetch(`${baseUrl}/threads/${thread.id}/runs`, {
+                // Direct Claude API call
+                const response = await fetch(`${baseUrl}/messages`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json", 
-                        "Authorization": `Bearer ${apiKey}`,
-                        "OpenAI-Beta": "assistants=v2"
+                        "x-api-key": apiKey,
+                        "anthropic-version": "2023-06-01"
                     },
                     body: JSON.stringify({
-                        assistant_id: assistantId
+                        model: "claude-3-5-sonnet-20241022",
+                        max_tokens: 1000,
+                        system: systemPrompt,
+                        messages: [{
+                            role: "user",
+                            content: `Please analyze this eBay Community post for moderation:
+
+Post: "${post_text}"
+Priority: ${priority}
+${learningContext}
+
+Provide your analysis in the exact JSON format specified in your instructions.`
+                        }]
                     })
                 });
 
-                if (!runRes.ok) throw new Error(`Run creation failed: ${runRes.status}`);
-                const run = await runRes.json();
-
-                // Poll for completion
-                let runStatus = run;
-                let attempts = 0;
-                const maxAttempts = 30; // 30 seconds max
-
-                while (runStatus.status === 'queued' || runStatus.status === 'in_progress') {
-                    if (attempts++ > maxAttempts) {
-                        throw new Error("Assistant response timeout");
-                    }
-                    
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    const statusRes = await fetch(`${baseUrl}/threads/${thread.id}/runs/${run.id}`, {
-                        headers: {
-                            "Authorization": `Bearer ${apiKey}`,
-                            "OpenAI-Beta": "assistants=v2"
-                        }
-                    });
-                    
-                    if (!statusRes.ok) throw new Error(`Status check failed: ${statusRes.status}`);
-                    runStatus = await statusRes.json();
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    throw new Error(`Claude API failed: ${response.status} - ${errorData}`);
                 }
 
-                if (runStatus.status !== 'completed') {
-                    throw new Error(`Assistant run failed: ${runStatus.status}`);
-                }
-
-                // Get the response
-                const messagesRes = await fetch(`${baseUrl}/threads/${thread.id}/messages`, {
-                    headers: {
-                        "Authorization": `Bearer ${apiKey}`,
-                        "OpenAI-Beta": "assistants=v2"
-                    }
-                });
-
-                if (!messagesRes.ok) throw new Error(`Messages retrieval failed: ${messagesRes.status}`);
-                const messages = await messagesRes.json();
-                
-                const assistantMessage = messages.data.find(msg => msg.role === 'assistant');
-                if (!assistantMessage) {
-                    throw new Error("No assistant response found");
-                }
-
-                // Parse the JSON response from assistant
-                const responseText = assistantMessage.content[0].text.value;
+                const result = await response.json();
+                const responseText = result.content[0].text;
                 let data;
                 
                 try {
@@ -408,7 +368,7 @@
                         data = JSON.parse(responseText);
                     }
                 } catch (e) {
-                    throw new Error(`Invalid JSON response from assistant: ${e.message}`);
+                    throw new Error(`Invalid JSON response from Claude: ${e.message}`);
                 }
 
                 // Validate and sanitize response
@@ -419,7 +379,7 @@
                     rationale: String(data.rationale || ""),
                     ban_length: BAN_LENGTHS.includes(data.ban_length) ? data.ban_length : "None",
                     message_to_user: String(data.message_to_user || ""),
-                    admin_note: String(data.admin_note || "Enhanced by OpenAI Assistant"),
+                    admin_note: String(data.admin_note || "Enhanced by Claude AI"),
                 };
 
                 return safe;
@@ -869,7 +829,7 @@
 
             const updateTemplateInput = (templateId, field, value) => {
                 setTemplateInputs(prev => ({
-                    ...prev,
+                        ...prev,
                     [templateId]: { ...prev[templateId], [field]: value }
                 }));
             };
@@ -1101,15 +1061,10 @@
             const removeAiRecord = (id) => setAiSaved((s) => s.filter((r) => r.id !== id));
 
             const configureApi = () => {
-                const base = prompt("OpenAI API Base URL", apiBase || "https://api.openai.com/v1");
-                if (base !== null) setApiBase(base);
-                
-                const key = prompt("OpenAI API Key", "sk-...");
-                if (key !== null) setApiKey(key);
-                
-                const assistantId = prompt("Assistant ID (from OpenAI Platform)", localStorage.getItem('ebay-mod-assistant-id') || "asst_...");
-                if (assistantId !== null) {
-                    localStorage.setItem('ebay-mod-assistant-id', assistantId);
+                const key = prompt("Claude API Key (from Anthropic Console)", apiKey || "sk-ant-api03-...");
+                if (key !== null) {
+                    setApiKey(key);
+                    alert("Claude API key configured! ✨\n\nClick 'Go Live' to start using Claude AI for moderation assistance.");
                 }
             };
 

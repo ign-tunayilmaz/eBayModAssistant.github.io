@@ -27,8 +27,8 @@ const ModerationTool = () => {
   const [showAIHistory, setShowAIHistory] = useState(false);
   const [aiSettings, setAiSettings] = useState({
     apiKey: '',
-    assistantId: '',
-    baseUrl: 'https://api.openai.com/v1',
+    baseUrl: 'https://api.anthropic.com/v1',
+    model: 'claude-3-5-sonnet-20241022',
     isActive: false
   });
   const [aiAnalysis, setAiAnalysis] = useState(null);
@@ -73,81 +73,76 @@ const ModerationTool = () => {
 
   const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
 
-  // AI Assistant Functions
+  // Claude AI Assistant Functions
   const analyzePost = async (content, priority) => {
-    if (!aiSettings.apiKey || !aiSettings.assistantId || !aiSettings.isActive) {
-      alert('AI Assistant not configured. Please check API Settings.');
+    if (!aiSettings.apiKey || !aiSettings.isActive) {
+      alert('Claude AI not configured. Please check API Settings.');
       return;
     }
 
     setIsAnalyzing(true);
     try {
-      // Create a thread
-      const threadResponse = await fetch(`${aiSettings.baseUrl}/threads`, {
+      // Claude system prompt for eBay moderation
+      const systemPrompt = `You are an expert eBay Community Moderation Assistant trained on official eBay Community Guidelines, professional moderation practices, and eBay community standards.
+
+Your role is to analyze user posts and provide structured moderation recommendations that help moderators make quick, accurate decisions while ensuring consistent enforcement of community guidelines.
+
+ALWAYS respond with valid JSON in this exact format:
+{
+  "violation": "Severe|Moderate|Minor|None",
+  "action": "Ban|Remove|Edit|Steer|NAR",
+  "sentiment": "😠|😐|😊",
+  "rationale": "Brief explanation of why this action is recommended",
+  "ban_length": "1 Day|3 Days|7 Days|30 Days|Indefinite|None",
+  "message_to_user": "Template message for user notification",
+  "admin_note": "Internal note for moderation log"
+}
+
+eBay Community Guidelines - Key Violations:
+- Spam, advertising, or promotional content
+- Profanity, harassment, or offensive language  
+- Personal information sharing (emails, phones, addresses)
+- Off-topic discussions or necroposting (6+ months old)
+- Duplicate posts or repetitive content
+- Threats, adult content, or illegal activities
+- Misinformation or misleading content
+
+Consider context, user intent, and severity when making recommendations. Priority levels (P1-P5) indicate urgency, with P1 being most critical.`;
+
+      // Direct Claude API call
+      const response = await fetch(`${aiSettings.baseUrl}/messages`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${aiSettings.apiKey}`,
           'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify({})
-      });
-
-      if (!threadResponse.ok) {
-        throw new Error(`Thread creation failed: ${threadResponse.status}`);
-      }
-
-      const thread = await threadResponse.json();
-
-      // Add message to thread
-      const messagePayload = {
-        role: 'user',
-        content: `Priority: ${priority}\nPost Content: "${content}"\n\nLearning Context: ${JSON.stringify(learningData.patterns)}`
-      };
-
-      await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${aiSettings.apiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify(messagePayload)
-      });
-
-      // Run the assistant
-      const runResponse = await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/runs`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${aiSettings.apiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
+          'x-api-key': aiSettings.apiKey,
+          'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          assistant_id: aiSettings.assistantId
+          model: aiSettings.model,
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{
+            role: 'user',
+            content: `Priority Level: ${priority}
+            
+Post Content: "${content}"
+
+Learning Context: ${JSON.stringify(learningData.patterns)}
+
+Analyze this eBay community post and provide a moderation recommendation. Consider the priority level and any patterns from previous moderation decisions.`
+          }]
         })
       });
 
-      const run = await runResponse.json();
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Claude API failed: ${response.status} - ${errorData}`);
+      }
 
-      // Poll for completion
-      let runStatus = await pollRunStatus(thread.id, run.id);
+      const result = await response.json();
+      const analysisText = result.content[0].text;
       
-      if (runStatus.status === 'completed') {
-        const messagesResponse = await fetch(`${aiSettings.baseUrl}/threads/${thread.id}/messages`, {
-          headers: {
-            'Authorization': `Bearer ${aiSettings.apiKey}`,
-            'OpenAI-Beta': 'assistants=v2'
-          }
-        });
-
-        const messages = await messagesResponse.json();
-        const assistantMessage = messages.data.find(msg => msg.role === 'assistant');
-        
-        if (assistantMessage) {
-          const analysisText = assistantMessage.content[0].text.value;
-          let analysis;
-          
+      let analysis;
           try {
             analysis = JSON.parse(analysisText);
           } catch (e) {
@@ -158,8 +153,8 @@ const ModerationTool = () => {
               sentiment: '😐',
               rationale: analysisText,
               ban_length: 'None',
-              message_to_user: '',
-              admin_note: 'AI analysis error'
+          message_to_user: 'Please review Community Guidelines',
+          admin_note: 'Claude analysis - manual review needed'
             };
           }
 
@@ -181,39 +176,13 @@ const ModerationTool = () => {
             ...prev,
             totalAnalyses: prev.totalAnalyses + 1
           }));
-        }
-      }
+
     } catch (error) {
-      console.error('AI Analysis Error:', error);
-      alert(`AI Analysis failed: ${error.message}`);
+      console.error('Claude Analysis Error:', error);
+      alert(`Claude AI Analysis failed: ${error.message}`);
     } finally {
       setIsAnalyzing(false);
     }
-  };
-
-  const pollRunStatus = async (threadId, runId) => {
-    const maxAttempts = 30;
-    let attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      const response = await fetch(`${aiSettings.baseUrl}/threads/${threadId}/runs/${runId}`, {
-        headers: {
-          'Authorization': `Bearer ${aiSettings.apiKey}`,
-          'OpenAI-Beta': 'assistants=v2'
-        }
-      });
-      
-      const run = await response.json();
-      
-      if (run.status === 'completed' || run.status === 'failed') {
-        return run;
-      }
-      
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      attempts++;
-    }
-    
-    throw new Error('Analysis timeout');
   };
 
   const recordUserOverride = (analysisId, userAction, wasCorrect) => {
