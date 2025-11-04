@@ -142,6 +142,8 @@
             const [manPriority, setManPriority] = useState("P4");
             const [manAction, setManAction] = useState("NAR");
             const [aiActiveTab, setAiActiveTab] = useState("queue");
+            const [testResults, setTestResults] = useState([]);
+            const [isRunningTests, setIsRunningTests] = useState(false);
             
             // Counter state
             const [counters, setCounters] = useState({
@@ -1229,13 +1231,22 @@ Provide your analysis in the exact JSON format specified in your instructions.`
             ];
             
             const runDevTests = async () => {
+                setIsRunningTests(true);
                 const results = [];
-                for (const tc of testCases) {
-                    const got = await enhancedLocalSuggest(tc.post, tc.priority); 
-                    const pass = got.violation === tc.expect.violation && got.action === tc.expect.action; 
-                    results.push({ name: tc.name, pass, got: { v: got.violation, a: got.action }, expect: tc.expect });
+                try {
+                    for (const tc of testCases) {
+                        const got = await enhancedLocalSuggest(tc.post, tc.priority); 
+                        const pass = got.violation === tc.expect.violation && got.action === tc.expect.action; 
+                        results.push({ name: tc.name, pass, got: { v: got.violation, a: got.action }, expect: tc.expect });
+                    }
+                    setTestResults(results);
+                    console.log('✅ Dev Tests completed:', results);
+                } catch (error) {
+                    console.error('❌ Dev Tests failed:', error);
+                    setTestResults([]);
+                } finally {
+                    setIsRunningTests(false);
                 }
-                return results;
             };
 
             const getTotalForPriority = (priority) => {
@@ -1648,7 +1659,25 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                             
                                             {aiActiveTab === "tests" && (
                                                 <div className="space-y-2">
-                                                    {runDevTests().map((result) => (
+                                                    <button 
+                                                        onClick={runDevTests}
+                                                        disabled={isRunningTests}
+                                                        className={`w-full mb-3 px-4 py-2 rounded text-sm font-medium ${
+                                                            isRunningTests 
+                                                                ? 'bg-gray-400 cursor-not-allowed text-white' 
+                                                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                                        }`}
+                                                    >
+                                                        {isRunningTests ? 'Running Tests...' : 'Run Dev Tests'}
+                                                    </button>
+                                                    
+                                                    {testResults.length === 0 && !isRunningTests && (
+                                                        <p className={`text-sm ${textSecondary} text-center py-4`}>
+                                                            Click "Run Dev Tests" to test AI logic with various scenarios
+                                                        </p>
+                                                    )}
+                                                    
+                                                    {testResults.map((result) => (
                                                         <div key={result.name} className={`flex items-center justify-between p-2 rounded text-xs ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
                                                             <span className={`font-medium ${textPrimary}`}>{result.name}</span>
                                                             <div className="flex items-center gap-2">
