@@ -332,7 +332,7 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
       instanceCount: trainingData.instanceCount,
       trainingInstances: trainingData.trainingInstances,
       exportDate: new Date().toISOString(),
-      version: "2.0.0",
+      version: "2.1.0",
       sessionId: localStorage.getItem('ebay-mod-session-id')
     };
 
@@ -1461,7 +1461,7 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
       ),
       h('div', { className: `rounded-lg shadow p-4 text-center text-sm ${cardBg} ${textSecondary} border ${borderColor}` },
         h('p', null, 'Contact: ', h('a', { href: 'mailto:tuna.yilmaz@ignitetech.ai', className: 'text-blue-600 underline' }, 'tuna.yilmaz@ignitetech.ai'), ', ', h('a', { href: 'mailto:c-tuna.yilmaz@khoros.com', className: 'text-blue-600 underline' }, 'c-tuna.yilmaz@khoros.com'), ', ', h('a', { href: 'mailto:lightattah@ignitetech.com', className: 'text-blue-600 underline' }, 'lightattah@ignitetech.com'), ' or ', h('a', { href: 'mailto:c-light.attah@khoros.com', className: 'text-blue-600 underline' }, 'c-light.attah@khoros.com')),
-        h('p', { className: 'mt-2 text-xs' }, 'Version 2.0.0')
+        h('p', { className: 'mt-2 text-xs' }, 'Version 2.1.0')
       )
     )
   );

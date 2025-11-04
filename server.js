@@ -24,7 +24,7 @@ async function initializeTrainingData() {
       instanceCount: 0,
       trainingInstances: [],
       createdDate: new Date().toISOString(),
-      version: "2.0.0"
+      version: "2.1.0"
     };
     
     await fs.writeFile(TRAINING_DATA_FILE, JSON.stringify(initialData, null, 2));
@@ -103,11 +103,11 @@ async function initializeLearningPatterns() {
             }
           ],
           implementedDate: new Date().toISOString(),
-          version: "2.0.0"
+          version: "2.1.0"
         }
       },
       createdDate: new Date().toISOString(),
-      version: "2.0.0"
+      version: "2.1.0"
     };
     
     await fs.writeFile(LEARNING_PATTERNS_FILE, JSON.stringify(initialPatterns, null, 2));
@@ -127,7 +127,7 @@ async function readTrainingData() {
       instanceCount: 0,
       trainingInstances: [],
       createdDate: new Date().toISOString(),
-      version: "2.0.0"
+      version: "2.1.0"
     };
   }
 }
@@ -157,7 +157,7 @@ async function readLearningPatterns() {
       commonCorrections: {},
       userContributions: {},
       createdDate: new Date().toISOString(),
-      version: "2.0.0"
+      version: "2.1.0"
     };
   }
 }
@@ -325,7 +325,7 @@ app.delete('/api/training-data/reset', async (req, res) => {
       trainingInstances: [],
       createdDate: new Date().toISOString(),
       lastReset: new Date().toISOString(),
-      version: "2.0.0"
+      version: "2.1.0"
     };
     
     const success = await writeTrainingData(resetData);
@@ -486,7 +486,7 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
-    version: '2.0.0'
+    version: '2.1.0'
   });
 });
 

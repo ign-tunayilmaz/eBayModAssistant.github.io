@@ -55,7 +55,7 @@ The server creates and maintains `AI_assistant_training_data.json`:
   ],
   "createdDate": "2024-10-28T15:30:45.123Z",
   "lastUpdated": "2024-10-28T15:30:45.123Z",
-  "version": "2.0.0"
+  "version": "2.1.0"
 }
 ```
 
