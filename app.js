@@ -74,17 +74,24 @@ const ModerationTool = () => {
   const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
 
   // Global Learning System Functions
-  const getGlobalLearningContext = async () => {
+      const getGlobalLearningContext = async () => {
     try {
       const response = await fetch('/api/learning-patterns/summary');
       if (response.ok) {
         const summary = await response.json();
         if (summary.totalAnalyses > 0) {
-          return `\nGlobal Learning Context (from ${summary.totalAnalyses} team interactions):
+          let context = `\nGlobal Learning Context (from ${summary.totalAnalyses} team interactions):
 - Team accuracy: ${summary.globalAccuracy}%
 - Common corrections: ${summary.commonCorrections.join(', ')}
-- Top override patterns: ${summary.topOverrides.join(', ')}
-- Last updated: ${new Date(summary.lastUpdated).toLocaleString()}`;
+- Top override patterns: ${summary.topOverrides.join(', ')}`;
+          
+          // Include expert rules for immediate intelligence
+          if (summary.expertRules?.personalInfoContext) {
+            context += `\n- EXPERT RULE - Personal Info Context: When users mention "phone number", "email", or "address" - check if they're sharing actual contact details (Edit) or just discussing eBay contact info, delivery issues, or general concepts (NAR)`;
+          }
+          
+          context += `\n- Last updated: ${new Date(summary.lastUpdated).toLocaleString()}`;
+          return context;
         }
       }
     } catch (error) {
@@ -165,11 +172,18 @@ ALWAYS respond with valid JSON in this exact format:
 eBay Community Guidelines - Key Violations:
 - Spam, advertising, or promotional content
 - Profanity, harassment, or offensive language  
-- Personal information sharing (emails, phones, addresses)
+- Personal information sharing (emails, phones, addresses) - CONTEXT MATTERS
 - Off-topic discussions or necroposting (6+ months old)
 - Duplicate posts or repetitive content
 - Threats, adult content, or illegal activities
 - Misinformation or misleading content
+
+IMPORTANT CONTEXT RULES FOR PERSONAL INFORMATION:
+- EDIT when users share actual contact details: "Call me at 555-1234", "Email me at john@gmail.com"
+- NAR when discussing eBay's contact info: "What's eBay's phone number?", "eBay doesn't have a phone number"
+- NAR when describing delivery issues: "Nothing came to my email address", "Package didn't arrive at my address"
+- NAR when asking about notifications: "My email isn't getting eBay alerts", "Address confirmation emails"
+- NAR when discussing general concepts: "phone number format", "email address requirements"
 
 Consider context, user intent, and severity when making recommendations. Priority levels (P1-P5) indicate urgency, with P1 being most critical.`;
 

@@ -206,15 +206,48 @@
                     rationale = "Accusations of fraud/scamming without evidence can be defamatory and harmful.";
                     message_to_user = "Please contact eBay directly for transaction disputes rather than making public accusations.";
                 
-                // MODERATE violations (Edit/Steer)
+                // MODERATE violations (Edit/Steer) - CONTEXT-AWARE PERSONAL INFO DETECTION
                 } else if (/(phone|call me|\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\+\d{10,})/.test(lowered)) {
-                    violation = "Moderate"; action = "Edit"; sentiment = "😐";
-                    rationale = "Personal contact information (phone number) shared publicly violates privacy guidelines.";
-                    message_to_user = "We removed your phone number from the post. Please use eBay's messaging system for contact.";
+                    // Context-aware phone number detection
+                    if (/(what.*(ebay|ebays?).*(phone|number)|does.*ebay.*have.*phone|ebay.*phone.*number|ebay.*doesn.*have.*phone|no.*phone.*number.*ebay)/.test(lowered)) {
+                        // Asking about eBay's phone number or stating eBay doesn't have one → NAR
+                        violation = "None"; action = "NAR"; sentiment = "😊";
+                        rationale = "User discussing eBay's contact methods - no personal info shared.";
+                        message_to_user = "";
+                    } else if (/(call me|contact me|reach me|phone me).*(\d{3}[-.\s]?\d{3}[-.\s]?\d{4}|\+\d{10,})/.test(lowered)) {
+                        // Actually sharing their phone number for contact → Edit
+                        violation = "Moderate"; action = "Edit"; sentiment = "😐";
+                        rationale = "Personal contact information (phone number) shared publicly violates privacy guidelines.";
+                        message_to_user = "We removed your phone number from the post. Please use eBay's messaging system for contact.";
+                    } else {
+                        // General phone discussion → NAR
+                        violation = "None"; action = "NAR"; sentiment = "😊";
+                        rationale = "General discussion about phone numbers without sharing personal contact info.";
+                        message_to_user = "";
+                    }
                 } else if (/(email|gmail|yahoo|hotmail|@\w+\.\w+)/.test(lowered)) {
-                    violation = "Moderate"; action = "Edit"; sentiment = "😐";
-                    rationale = "Email addresses should not be shared publicly on the community.";
-                    message_to_user = "We removed your email address. Please use eBay's private messaging system for contact.";
+                    // Context-aware email detection
+                    if (/(my.*email.*(not|isn.*t|didn.*t|won.*t).*(get|getting|receive|receiving|come|coming)|email.*(not|isn.*t|didn.*t|won.*t).*(work|working)|nothing.*came.*to.*my.*email|email.*address.*not.*working)/.test(lowered)) {
+                        // Discussing email delivery issues without revealing email → NAR
+                        violation = "None"; action = "NAR"; sentiment = "😊";
+                        rationale = "User discussing email delivery issues without sharing personal contact information.";
+                        message_to_user = "";
+                    } else if (/(my.*address|my.*email.*address|package.*didn.*t.*arrive|nothing.*delivered|delivery.*issue)/.test(lowered) && !/@\w+\.\w+/.test(original)) {
+                        // Discussing delivery to address without revealing it → NAR
+                        violation = "None"; action = "NAR"; sentiment = "😊";
+                        rationale = "User discussing delivery issues without sharing personal address information.";
+                        message_to_user = "";
+                    } else if (/(contact.*me.*at|email.*me.*at|reach.*me.*at|send.*me.*email).*@\w+\.\w+/.test(lowered)) {
+                        // Actually sharing email for contact → Edit
+                        violation = "Moderate"; action = "Edit"; sentiment = "😐";
+                        rationale = "Email addresses should not be shared publicly on the community.";
+                        message_to_user = "We removed your email address. Please use eBay's private messaging system for contact.";
+                    } else {
+                        // General email discussion → NAR
+                        violation = "None"; action = "NAR"; sentiment = "😊";
+                        rationale = "General discussion about email without sharing personal contact information.";
+                        message_to_user = "";
+                    }
                 } else if (/(mods? suck|ebay sucks|corrupt|useless|incompetent)/.test(lowered)) {
                     violation = "Moderate"; action = "Edit"; sentiment = "😡";
                     rationale = "Hostile language towards eBay staff/moderators disrupts community atmosphere.";
@@ -304,11 +337,18 @@ ALWAYS respond with valid JSON in this exact format:
 eBay Community Guidelines - Key Violations:
 - Spam, advertising, or promotional content
 - Profanity, harassment, or offensive language
-- Personal information sharing (emails, phones, addresses)
+- Personal information sharing (emails, phones, addresses) - CONTEXT MATTERS
 - Off-topic discussions or necroposting (6+ months old)
 - Duplicate posts or repetitive content
 - Threats, adult content, or illegal activities
-- Misinformation or misleading content`;
+- Misinformation or misleading content
+
+IMPORTANT CONTEXT RULES FOR PERSONAL INFORMATION:
+- EDIT when users share actual contact details: "Call me at 555-1234", "Email me at john@gmail.com"
+- NAR when discussing eBay's contact info: "What's eBay's phone number?", "eBay doesn't have a phone number"
+- NAR when describing delivery issues: "Nothing came to my email address", "Package didn't arrive at my address"
+- NAR when asking about notifications: "My email isn't getting eBay alerts", "Address confirmation emails"
+- NAR when discussing general concepts: "phone number format", "email address requirements"`;
 
                 // Get global learning context
                 let learningContext = "";
@@ -320,8 +360,14 @@ eBay Community Guidelines - Key Violations:
                             learningContext = `\nGlobal Team Learning Context (${summary.totalAnalyses} interactions):
 - Team accuracy: ${summary.globalAccuracy}%
 - Common corrections: ${summary.commonCorrections.join(', ')}
-- Top override patterns: ${summary.topOverrides.join(', ')}
-- Last updated: ${new Date(summary.lastUpdated).toLocaleString()}`;
+- Top override patterns: ${summary.topOverrides.join(', ')}`;
+                            
+                            // Include expert rules for immediate intelligence
+                            if (summary.expertRules?.personalInfoContext) {
+                                learningContext += `\n- EXPERT RULE - Personal Info Context: When users mention "phone number", "email", or "address" - check if they're sharing actual contact details (Edit) or just discussing eBay contact info, delivery issues, or general concepts (NAR)`;
+                            }
+                            
+                            learningContext += `\n- Last updated: ${new Date(summary.lastUpdated).toLocaleString()}`;
                         }
                     }
                 } catch (error) {
@@ -1155,10 +1201,17 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 { name: "Fraud accusation → Major/Remove", post: "This eBay seller is a scam artist trying to cheat buyers.", priority: "P1", expect: { violation: "Major", action: "Remove" } },
                 
                 // Moderate violations
-                { name: "Phone number → Moderate/Edit", post: "Please call me at 215-858-8440 if interested.", priority: "P2", expect: { violation: "Moderate", action: "Edit" } },
-                { name: "Email address → Moderate/Edit", post: "Contact me at john@gmail.com for more info.", priority: "P3", expect: { violation: "Moderate", action: "Edit" } },
+                { name: "Phone number sharing → Moderate/Edit", post: "Please call me at 215-858-8440 if interested.", priority: "P2", expect: { violation: "Moderate", action: "Edit" } },
+                { name: "Email address sharing → Moderate/Edit", post: "Contact me at john@gmail.com for more info.", priority: "P3", expect: { violation: "Moderate", action: "Edit" } },
                 { name: "Mod hostility → Moderate/Edit", post: "The mods suck and eBay is corrupt and useless.", priority: "P2", expect: { violation: "Moderate", action: "Edit" } },
                 { name: "Personal attack → Moderate/Edit", post: "You're so stupid and ignorant about this topic.", priority: "P3", expect: { violation: "Moderate", action: "Edit" } },
+                
+                // Context-aware personal info (should be NAR)
+                { name: "eBay phone question → None/NAR", post: "What's eBay's phone number for customer service?", priority: "P3", expect: { violation: "None", action: "NAR" } },
+                { name: "eBay no phone → None/NAR", post: "eBay doesn't have a phone number, you have to use chat.", priority: "P3", expect: { violation: "None", action: "NAR" } },
+                { name: "Email delivery issue → None/NAR", post: "My email isn't getting eBay notifications anymore.", priority: "P3", expect: { violation: "None", action: "NAR" } },
+                { name: "Address delivery issue → None/NAR", post: "Package didn't arrive at my address, what should I do?", priority: "P3", expect: { violation: "None", action: "NAR" } },
+                { name: "Email concept discussion → None/NAR", post: "The email address format requirements are confusing.", priority: "P4", expect: { violation: "None", action: "NAR" } },
                 
                 // Minor violations
                 { name: "Advertising → Minor/Steer", post: "Check out my store at bestdeals.com for great prices!", priority: "P3", expect: { violation: "Minor", action: "Steer" } },
