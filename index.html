@@ -2080,6 +2080,9 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                     <button onClick={() => copyToClipboard(generateEOSReport(), 'eos-report')} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center gap-2">
                                         {copiedId === 'eos-report' ? (<><Check className="w-5 h-5" />Copied</>) : (<><Copy className="w-5 h-5" />Copy</>)}
                                     </button>
+                                    <a href={EOS_REPORT_FORM_URL} target="_blank" rel="noopener noreferrer" className={`px-6 py-3 rounded-lg font-semibold flex items-center justify-center ${darkMode ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}>
+                                        Upload EOS Report
+                                    </a>
                                     <button onClick={() => setShowEOSReport(false)} className={`px-6 py-3 rounded-lg font-semibold ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>Close</button>
                                 </div>
                             </div>
