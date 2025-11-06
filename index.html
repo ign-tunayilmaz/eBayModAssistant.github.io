@@ -156,8 +156,8 @@
             const [templateInputs, setTemplateInputs] = useState({
                 friendlyRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
                 warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                friendlyEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
-                warningEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+                friendlyEditedPost: { url: '', username: '', title: '', guidelines: '', quote: '' },
+                warningEditedPost: { url: '', username: '', title: '', guidelines: '', quote: '' },
                 csRedirect: { url: '', username: '' },
                 banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
             });
@@ -173,6 +173,7 @@
             const dropdownRefs = useRef({});
 
             const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
+            const EOS_REPORT_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdk-KjXHSklDn381qJno1knL1QpbXeonbwAtlkHajtiqIGrWQ/viewform';
 
             // AI constants
             const AI_SENTIMENTS = ["🙂", "😐", "😡"];
@@ -475,8 +476,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
             const templates = {
                 friendlyRemovedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post "[TITLE]" from [DATE_TIME] has been removed because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYou posted the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
                 warningRemovedPost: 'Hi [USERNAME],\n \nThis is an official moderation warning to inform you that your recent post "[TITLE]" from [DATE_TIME] has been removed because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYou posted the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
-                friendlyEditedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post [HERE] has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
-                warningEditedPost: 'Hi [USERNAME],\n \nThis is an official moderation warning to inform you that your recent post [HERE] has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
+                friendlyEditedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post "[TITLE]" has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
+                warningEditedPost: 'Hi [USERNAME],\n \nThis is an official moderation warning to inform you that your recent post "[TITLE]" has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
                 necroThread: 'Hi everyone,\n \nDue to the age of this thread, it has been closed to further replies. Please feel free to start a new thread if you wish to continue to discuss this topic.\n \nThank you for understanding.',
                 opRequest: 'Hi everyone,\n \nThis thread has been closed at the request of the OP.\n \nThank you for understanding.',
                 lockingOffTopic: 'Hi everyone,\n \nWe appreciate your participation in this discussion. However, the conversation has gone off-topic and has become a bit too heated. To help keep the community welcoming and constructive for all members, we\'re locking this thread from further replies.\n \nPlease remember to keep future discussions respectful and on-topic per our Community Guidelines.\n \nThank you for your understanding and for helping us keep the forums friendly and productive.\n \n— eBay Community Team',
@@ -500,7 +501,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 sg07: 'promoting off-eBay sites, groups, or forums',
                 sg08: 'reposted content that has been edited or removed by eBay Community staff',
                 sg09: 'about moderation warnings or consequences',
-                sg10: 'about another user listings or user IDs to tarnish their reputation',
+                sg10: 'Mentioning another user, listing or user ID to tarnish their reputation',
                 sg11: 'encouraging others to violate the eBay User Agreement or policies',
                 sg12: 'of copyrighted content without the permission of the copyright owner'
             };
@@ -511,7 +512,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 { id: 'ban-non', priority: 'P3', title: 'Banning - Non Spammers', color: 'bg-pink-50 border-pink-200', steps: ['Use Response author profile to link to member profile', 'Ban using current process', 'Document admin notes', 'Add appropriate ban tag to author profile', 'Close original conversation as Mod Action Taken'] },
                 { id: 'move', priority: 'P4', title: 'Moving a Post', color: 'bg-blue-50 border-blue-200', steps: ['Go to link of the post', 'Click down arrow on message', 'Select Move Message', 'Leave everything checked', 'Move to relevant category', 'Add Moved tag in Care', 'Close Abuse Report as Mod Action Taken'] },
                 { id: 'edit', priority: 'P5', title: 'Dealing with Swearing', color: 'bg-yellow-50 border-yellow-200', steps: ['Use Friendly PM: Edited Post template', 'Fill Username, Guidelines, and removed message', 'Add admin note', 'Close as Mod Action Taken', 'Add Steered and Edited tags'] },
-                { id: 'bullying', priority: 'P6', title: 'Dealing with Bullying', color: 'bg-rose-50 border-rose-200', steps: ['Edit the bullying message with [Removed by Moderator]', 'Reply to the bully with: Removed for not following our Community Guidelines: Please keep discussions respectful and open-minded. Differences of opinion are welcome, but conversations must remain friendly, inclusive, and considerate toward all members.'] },
+                { id: 'bullying', priority: 'P6', title: 'Dealing with Bullying', color: 'bg-rose-50 border-rose-200', steps: ['Possible bullying should be escalated to eBay for intervene approval', 'After getting approval from eBay we can take action with the steps below', 'Edit the bullying message with [Removed by Moderator]', 'Reply to the bully with: "Removed for not following our Community Guidelines: Please keep discussions respectful and open-minded. Differences of opinion are welcome, but conversations must remain friendly, inclusive, and considerate toward all members."'] },
                 { id: 'necro', priority: 'P7', title: 'Topics Older than 6 Months', color: 'bg-purple-50 border-purple-200', steps: ['Use necro thread macro from Additional Templates', 'Close the thread for new replies'] },
                 { id: 'abuse', priority: 'P8', title: 'Abuse & Filter Reports', color: 'bg-teal-50 border-teal-200', steps: ['Claim and look for other reports on same user', 'If NAR, reply and close as NAR', 'If action needed, search for reported conversation', 'Claim the conversation', 'Take appropriate moderation action', 'Add tag for Edited, Moved, Moderated or Locked', 'Document action in admin notes', 'Reply to AR with actions taken', 'Close as Mod Action Taken'] },
                 { id: 'closing', priority: 'P9', title: 'Closing Reports', color: 'bg-indigo-50 border-indigo-200', steps: ['If no action needed, close as NAR', 'If action needed, close as Mod Action Taken', 'Reply to AR, no need for FR', 'If PM from AR, reply but do not close', 'If duplicate, reply and close as Duplicate Report'] },
@@ -919,8 +920,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 const defaults = {
                     friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
                     warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                    friendlyEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-                    warningEditedPost: { username: '', here: '', guidelines: '', quote: '' },
+                    friendlyEditedPost: { username: '', title: '', guidelines: '', quote: '' },
+                    warningEditedPost: { username: '', title: '', guidelines: '', quote: '' },
                     csRedirect: { username: '' },
                     banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
                 };
@@ -943,7 +944,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 } else if (templateId.includes('Edited')) {
                     populated = populated
                         .replace('[USERNAME]', inputs.username || '[USERNAME]')
-                        .replace('[HERE]', inputs.here || '[HERE]')
+                        .replace('[TITLE]', inputs.title || '[TITLE]')
                         .replace('[GUIDELINES]', inputs.guidelines || '[GUIDELINES]')
                         .replace('[QUOTE]', inputs.quote || '[QUOTE]');
                 } else if (templateId === 'csRedirect') {
@@ -953,7 +954,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                     inputs.banPeriod === '3 Days' ? '3 days' :
                                     inputs.banPeriod === '7 Days' ? '7 days' :
                                     inputs.banPeriod === '30 Days' ? '30 days' : 'indefinite';
-                    populated = 'Internal Reason\n\n' + inputs.banPeriod + ' Login Restriction\n\nReasoning: ' + (inputs.reasoning || '[Reasoning]') + '\nUsername: ' + (inputs.username || '[Username]') + '\nEmail: ' + (inputs.email || '[Email]') + '\nIP: ' + (inputs.ip || '[IP]') + '\nSpam URL: ' + (inputs.spamUrl || '[URL]') + '\nStart Date: ' + (inputs.startDate || '[DATE]') + '\nBan Length: ' + banLength + '\n\n---\n\nPublic Reason\n\nViolating the rules and policies of the eBay Community with actions such as ' + (inputs.reasoning || '[Reasoning]') + '. Your ban is effective from ' + (inputs.startDate || '[DATE]') + ' and will last ' + banLength + '.';
+                    populated = 'Internal Reason\n\n' + inputs.banPeriod + ' Login Restriction\n\nReasoning: ' + (inputs.reasoning || '[Reasoning]') + '\nUsername: ' + (inputs.username || '[Username]') + '\nEmail: ' + (inputs.email || '[Email]') + '\nIP: ' + (inputs.ip || '[IP]') + '\nURL: ' + (inputs.spamUrl || '[URL]') + '\nStart Date: ' + (inputs.startDate || '[DATE]') + '\nBan Length: ' + banLength + '\n\n---\n\nPublic Reason\n\nViolating the rules and policies of the eBay Community with actions such as ' + (inputs.reasoning || '[Reasoning]') + '. Your ban is effective from ' + (inputs.startDate || '[DATE]') + ' and will last ' + banLength + '.';
                 }
                 return populated;
             };
@@ -965,9 +966,18 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 }));
             };
 
+            const clearAdminNoteInputs = (noteId) => {
+                if (noteId === 'edited') {
+                    setAdminNoteInputs(prev => ({
+                        ...prev,
+                        edited: { link: '', removed: '', violation: '' }
+                    }));
+                }
+            };
+
             const getPopulatedAdminNote = (noteId) => {
                 const inputs = adminNoteInputs[noteId];
-                return '<a href="' + (inputs.link || '[link]') + '">Edited Post</a> to remove "' + (inputs.removed || '[removed portion]') + '".\nSent user a friendly PM for: ' + (inputs.violation || '[violation]');
+                return '<a href="' + (inputs.link || '[link]') + '">Edited Post</a> to remove "' + (inputs.removed || '[removed portion]') + '".<br>Sent user a friendly PM for: ' + (inputs.violation || '[violation]');
             };
 
             const addFlag = (priority, actionType) => {
@@ -1783,7 +1793,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                         <input type="text" placeholder="Username" value={templateInputs.banCombined.username} onChange={(e) => updateTemplateInput('banCombined', 'username', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                         <input type="text" placeholder="Email" value={templateInputs.banCombined.email} onChange={(e) => updateTemplateInput('banCombined', 'email', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                         <input type="text" placeholder="IP" value={templateInputs.banCombined.ip} onChange={(e) => updateTemplateInput('banCombined', 'ip', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
-                                        <input type="text" placeholder="Spam URL" value={templateInputs.banCombined.spamUrl} onChange={(e) => updateTemplateInput('banCombined', 'spamUrl', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                        <input type="text" placeholder="URL" value={templateInputs.banCombined.spamUrl} onChange={(e) => updateTemplateInput('banCombined', 'spamUrl', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                         <input type="date" value={templateInputs.banCombined.startDate} onChange={(e) => updateTemplateInput('banCombined', 'startDate', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`} />
                                     </div>
                                     <div className={`${cardBg} p-3`}>
@@ -1848,7 +1858,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                                                         </>
                                                                     )}
                                                                     {template.type === 'edited' && (
-                                                                        <input type="text" placeholder="HERE (link)" value={templateInputs[template.id]?.here || ''} onChange={(e) => updateTemplateInput(template.id, 'here', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                        <input type="text" placeholder="TITLE" value={templateInputs[template.id]?.title || ''} onChange={(e) => updateTemplateInput(template.id, 'title', e.target.value)} data-template-id={template.id} data-field="title" className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                                                     )}
                                                                     {template.type !== 'username' && (
                                                                         <>
@@ -1961,9 +1971,12 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                 <h3 className={`font-semibold ${textPrimary}`}>Admin Notes</h3>
                                 <div className="flex items-center gap-2">
                                     {showAdminNotes && (
-                                        <button onClick={() => copyToClipboard(getPopulatedAdminNote('edited'), 'admin-edited')} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
-                                            {copiedId === 'admin-edited' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
-                                        </button>
+                                        <>
+                                            <button onClick={() => copyToClipboard(getPopulatedAdminNote('edited'), 'admin-edited')} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
+                                                {copiedId === 'admin-edited' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
+                                            </button>
+                                            <button onClick={() => clearAdminNoteInputs('edited')} className={`flex items-center gap-2 px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>Clear</button>
+                                        </>
                                     )}
                                     <button onClick={() => setShowAdminNotes(!showAdminNotes)} className="flex items-center gap-1">
                                         <span className={`text-sm ${textSecondary}`}>{showAdminNotes ? 'Hide' : 'Show'}</span>
@@ -2047,8 +2060,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
 
                         {/* Footer */}
                         <div className={`rounded-lg shadow p-4 text-center text-sm ${cardBg} ${textSecondary} border ${borderColor}`}>
-                        <p>Contact: <a href="mailto:tuna.yilmaz@ignitetech.ai" className="text-blue-600 underline">tuna.yilmaz@ignitetech.ai</a>, <a href="mailto:c-tuna.yilmaz@khoros.com" className="text-blue-600 underline">c-tuna.yilmaz@khoros.com</a>, <a href="mailto:lightattah@ignitetech.com" className="text-blue-600 underline">lightattah@ignitetech.com</a> or <a href="mailto:c-light.attah@khoros.com" className="text-blue-600 underline">c-light.attah@khoros.com</a></p>
-                        <p className="mt-2 text-xs">Version 2.1.0</p>
+                        <p>Contact: <a href="mailto:tuna.yilmaz@ignitetech.com" className="text-blue-600 underline">tuna.yilmaz@ignitetech.com</a> &amp; <a href="mailto:light.attah@ignitetech.com" className="text-blue-600 underline">light.attah@ignitetech.com</a></p>
+                        <p className="mt-2 text-xs">Version 2.2.0</p>
                         </div>
                     </div>
 

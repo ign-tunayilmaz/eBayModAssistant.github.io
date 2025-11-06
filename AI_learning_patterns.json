@@ -1,0 +1,89 @@
+{
+  "globalStats": {
+    "totalAnalyses": 10,
+    "correctPredictions": 10,
+    "accuracy": 100,
+    "lastUpdated": "2025-11-06T17:40:52.290Z"
+  },
+  "overridePatterns": {
+    "Edit→NAR": 5
+  },
+  "violationAccuracy": {
+    "violations_detected": {
+      "correct": 5,
+      "total": 5
+    },
+    "clean_posts_detected": {
+      "correct": 5,
+      "total": 5
+    }
+  },
+  "priorityBiases": {},
+  "commonCorrections": {
+    "Moderate_Edit": {
+      "count": 5,
+      "correctedTo": "NAR",
+      "lastSeen": "2025-11-06T17:40:52.290Z",
+      "note": "Context-aware personal info detection: eBay contact questions, delivery issues, and general discussion should be NAR"
+    }
+  },
+  "userContributions": {
+    "system_expert": {
+      "interactions": 10,
+      "corrections": 5,
+      "lastActive": "2025-11-06T17:40:52.290Z",
+      "note": "Pre-seeded expert knowledge for context-aware personal information detection"
+    }
+  },
+  "expertRules": {
+    "personalInfoContext": {
+      "description": "Context-aware personal information detection rules",
+      "rules": [
+        {
+          "context": "eBay contact questions",
+          "examples": [
+            "What's eBay's phone number?",
+            "Does eBay have a phone number?",
+            "eBay customer service number"
+          ],
+          "action": "NAR",
+          "rationale": "User asking about eBay's contact methods, not sharing personal info"
+        },
+        {
+          "context": "Delivery/notification issues",
+          "examples": [
+            "My email isn't getting notifications",
+            "Package didn't arrive at my address",
+            "Nothing came to my email"
+          ],
+          "action": "NAR",
+          "rationale": "User discussing delivery issues without revealing personal contact information"
+        },
+        {
+          "context": "General concept discussion",
+          "examples": [
+            "Email address format",
+            "Phone number requirements",
+            "Address validation"
+          ],
+          "action": "NAR",
+          "rationale": "General discussion about contact info concepts, not sharing personal details"
+        },
+        {
+          "context": "Actual contact info sharing",
+          "examples": [
+            "Call me at 555-1234",
+            "Email me at john@gmail.com",
+            "Contact me at"
+          ],
+          "action": "Edit",
+          "rationale": "User actually sharing personal contact information publicly"
+        }
+      ],
+      "implementedDate": "2025-11-06T17:40:52.290Z",
+      "version": "2.1.0"
+    }
+  },
+  "createdDate": "2025-11-06T17:40:52.290Z",
+  "version": "2.1.0"
+}
