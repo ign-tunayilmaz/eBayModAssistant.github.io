@@ -82,6 +82,7 @@ const ModerationTool = () => {
   });
 
   const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
+  const AI_ACTIONS = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved']; // Aligned with EOS report actions
 
   // Global Learning System Functions
       const getGlobalLearningContext = async () => {
@@ -171,7 +172,7 @@ Your role is to analyze user posts and provide structured moderation recommendat
 ALWAYS respond with valid JSON in this exact format:
 {
   "violation": "Severe|Moderate|Minor|None",
-  "action": "Ban|Remove|Edit|Steer|NAR",
+  "action": "NAR|Edit|Steer|Remove|Ban|Locked|Moved",
   "sentiment": "😠|😐|😊",
   "rationale": "Brief explanation of why this action is recommended",
   "ban_length": "1 Day|3 Days|7 Days|30 Days|Indefinite|None",
@@ -194,6 +195,15 @@ IMPORTANT CONTEXT RULES FOR PERSONAL INFORMATION:
 - NAR when describing delivery issues: "Nothing came to my email address", "Package didn't arrive at my address"
 - NAR when asking about notifications: "My email isn't getting eBay alerts", "Address confirmation emails"
 - NAR when discussing general concepts: "phone number format", "email address requirements"
+
+AVAILABLE MODERATION ACTIONS (match EOS report tracking):
+- NAR: No Action Required (post complies with guidelines)
+- Edit: Edit post to remove violating content but preserve main message
+- Steer: Redirect discussion, lock heated threads, guide behavior
+- Remove: Delete post entirely (spam, severe violations)
+- Ban: Temporarily or permanently restrict user access
+- Locked: Lock thread from further replies
+- Moved: Move post/thread to appropriate board or category
 
 Consider context, user intent, and severity when making recommendations. Priority levels (P1-P5) indicate urgency, with P1 being most critical.`;
 

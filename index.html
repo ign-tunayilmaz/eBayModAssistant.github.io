@@ -188,7 +188,7 @@
             // AI constants
             const AI_SENTIMENTS = ["🙂", "😐", "😡"];
             const AI_PRIORITIES = ["P1", "P2", "P3", "P4", "P5"];
-            const AI_ACTIONS = ["NAR", "Steer", "Edit", "Archive", "Ban", "Lock"];
+            const AI_ACTIONS = ["NAR", "Edit", "Steer", "Remove", "Ban", "Locked", "Moved"];
             const VIOLATION_LEVELS = ["None", "Minor", "Moderate", "Major"];
             const BAN_LENGTHS = ["None", "1d", "3d", "7d", "30d", "Indefinite"];
 
@@ -339,7 +339,7 @@
 ALWAYS respond with valid JSON in this exact format:
 {
   "violation": "Severe|Moderate|Minor|None",
-  "action": "Ban|Remove|Edit|Steer|NAR",
+  "action": "NAR|Edit|Steer|Remove|Ban|Locked|Moved",
   "sentiment": "😠|😐|😊",
   "rationale": "Brief explanation of why this action is recommended",
   "ban_length": "1 Day|3 Days|7 Days|30 Days|Indefinite|None",
@@ -361,7 +361,16 @@ IMPORTANT CONTEXT RULES FOR PERSONAL INFORMATION:
 - NAR when discussing eBay's contact info: "What's eBay's phone number?", "eBay doesn't have a phone number"
 - NAR when describing delivery issues: "Nothing came to my email address", "Package didn't arrive at my address"
 - NAR when asking about notifications: "My email isn't getting eBay alerts", "Address confirmation emails"
-- NAR when discussing general concepts: "phone number format", "email address requirements"`;
+- NAR when discussing general concepts: "phone number format", "email address requirements"
+
+AVAILABLE MODERATION ACTIONS (match EOS report tracking):
+- NAR: No Action Required (post complies with guidelines)
+- Edit: Edit post to remove violating content but preserve main message
+- Steer: Redirect discussion, lock heated threads, guide behavior
+- Remove: Delete post entirely (spam, severe violations)
+- Ban: Temporarily or permanently restrict user access
+- Locked: Lock thread from further replies
+- Moved: Move post/thread to appropriate board or category`;
 
                 // Get global learning context
                 let learningContext = "";
@@ -1080,20 +1089,12 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 
                 try {
                     // Map AI actions to existing counter actions
-                    const actionMapping = {
-                        "NAR": "NAR",
-                        "Steer": "Steer", 
-                        "Edit": "Edit",
-                        "Archive": "Remove", // Map Archive to Remove
-                        "Ban": "Ban",
-                        "Lock": "Locked"
-                    };
+                    // AI actions now match EOS report actions exactly - direct mapping
+                    const counterAction = aiFinalAction;
                     
-                    const counterAction = actionMapping[aiFinalAction] || aiFinalAction;
-                    
-                    // Validate action mapping
-                    if (!actionMapping[aiFinalAction]) {
-                        console.warn(`⚠️ Unknown action "${aiFinalAction}" - using as-is`);
+                    // Validate action is in our tracking system
+                    if (!modActionTypes.includes(aiFinalAction)) {
+                        console.warn(`⚠️ Unknown action "${aiFinalAction}" - not in EOS tracking system`);
                     }
                     
                     // Update existing counter system (P1-P4 only, since existing system doesn't have P5)
