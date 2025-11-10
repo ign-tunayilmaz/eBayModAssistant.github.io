@@ -1,6 +1,6 @@
 {
   "name": "ebay-moderation-tool",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "homepage": "https://ign-tunayilmaz.github.io/eBayModAssistant.github.io/",
   "private": true,
   "dependencies": {

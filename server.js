@@ -39,7 +39,7 @@ async function initializeTrainingData() {
       instanceCount: 0,
       trainingInstances: [],
       createdDate: new Date().toISOString(),
-      version: "2.2.0"
+      version: "2.3.0"
     };
     
     await fs.writeFile(TRAINING_DATA_FILE, JSON.stringify(initialData, null, 2));
@@ -118,11 +118,11 @@ async function initializeLearningPatterns() {
             }
           ],
           implementedDate: new Date().toISOString(),
-          version: "2.2.0"
+          version: "2.3.0"
         }
       },
       createdDate: new Date().toISOString(),
-      version: "2.2.0"
+      version: "2.3.0"
     };
     
     await fs.writeFile(LEARNING_PATTERNS_FILE, JSON.stringify(initialPatterns, null, 2));
@@ -142,7 +142,7 @@ async function readTrainingData() {
       instanceCount: 0,
       trainingInstances: [],
       createdDate: new Date().toISOString(),
-      version: "2.2.0"
+      version: "2.3.0"
     };
   }
 }
@@ -172,7 +172,7 @@ async function readLearningPatterns() {
       commonCorrections: {},
       userContributions: {},
       createdDate: new Date().toISOString(),
-      version: "2.2.0"
+      version: "2.3.0"
     };
   }
 }
@@ -340,7 +340,7 @@ app.delete('/api/training-data/reset', async (req, res) => {
       trainingInstances: [],
       createdDate: new Date().toISOString(),
       lastReset: new Date().toISOString(),
-      version: "2.2.0"
+      version: "2.3.0"
     };
     
     const success = await writeTrainingData(resetData);
@@ -820,7 +820,7 @@ app.delete('/api/scrape/cache/clear', async (req, res) => {
         lastCleanup: new Date().toISOString()
       },
       clearedDate: new Date().toISOString(),
-      version: "2.2.0"
+      version: "2.3.0"
     };
     
     await writeScrapingCache(clearedCache);
@@ -842,7 +842,7 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
-    version: '2.2.0',
+    version: '2.3.0',
     features: ['learning_patterns', 'training_data', 'advanced_webscraping']
   });
 });
@@ -866,7 +866,7 @@ async function initializeScrapingCache() {
         lastCleanup: new Date().toISOString()
       },
       createdDate: new Date().toISOString(),
-      version: "2.2.0"
+      version: "2.3.0"
     };
     
     await fs.writeFile(SCRAPING_CACHE_FILE, JSON.stringify(initialCache, null, 2));
