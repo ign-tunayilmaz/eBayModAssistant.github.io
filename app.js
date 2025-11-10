@@ -196,17 +196,32 @@ AVAILABLE MODERATION ACTIONS (match EOS report tracking):
 - Locked: Lock thread from further replies (use for necroposting, heated discussions)
 - Moved: Move post/thread to appropriate board or category
 
-CRITICAL P1 PRIORITY RULES:
-1. NECROPOSTING TAKES PRECEDENCE: If thread >6 months old, action=Locked regardless of other violations
-2. PRIVACY VIOLATIONS: Screenshots/images with personal info → Edit (remove image), use descriptive QUOTE like "A screenshot containing buyer's full address"
-3. MULTIPLE VIOLATIONS: Prioritize the primary issue (necro > privacy > content quality)
-4. SELF-REPORTS: User reporting their own mistake (often necroposting) → still apply standard rules
+CRITICAL P1 PRIORITY RULES - REAL-WORLD WORKFLOW:
+1. NECROPOSTING TAKES PRECEDENCE: Thread >6 months old → action=Locked, use "Locking: Necro Thread" template, ignore all other violations
+2. PRIVACY VIOLATIONS: Screenshots/images with personal info → action=Edit, QUOTE="A screenshot containing buyer's full address" (descriptive for non-text)
+3. HOSTILE INSULTS: Personal attacks/sarcastic hostility → action=Remove, use Friendly PM for first offense (not Warning unless repeat)
+4. MISPLACED CONTENT: Posts in wrong board → action=Moved, note target board in rationale
+5. MULTIPLE VIOLATIONS: Prioritize necro > privacy > hostility > content quality
+
+P1 RESOLUTION WORKFLOW:
+Step 1: Check thread age first (>6 months = Locked, done)
+Step 2: Check for privacy exposure (personal info in screenshots/images = Edit)
+Step 3: Assess hostility level (insults/attacks = Remove with Friendly PM)
+Step 4: Check placement (wrong board = Moved)
+Step 5: Apply standard violation rules
 
 TEMPLATE POPULATION RULES (CRITICAL):
-- For "Edited Post" templates: [HERE] = full post title in quotes (not a link)
-- GUIDELINES field = description text ONLY (NO numbers like "GG05:" or "SG10:")
-- QUOTE field = actual removed text OR descriptive explanation for non-text content (images, screenshots, videos)
-- USERNAME = violator's username, not reporter's username
+- USERNAME = violator's username (NOT the reporter who filed the abuse report)
+- TITLE = full post title in quotes for "Edited Post" templates, no [HERE] placeholder
+- DATE_TIME = exact format from post (e.g., "‎11-09-2025 08:03 PM")
+- GUIDELINES = description text ONLY (remove "GG01:", "SG10:" etc - just the text)
+- QUOTE = actual removed text OR descriptive for images: "A screenshot containing buyer's full address"
+
+P1 TONE GUIDELINES:
+- First offense hostile language → Friendly PM (educational, not punitive)
+- Unintentional privacy violations → Friendly PM (user likely didn't realize)
+- Self-reports (user flagging their own mistake) → still apply standard action
+- Repeat violations or severe content → Warning PM or escalate to ban
 
 Consider context, user intent, and severity when making recommendations. Priority levels (P1-P5) indicate urgency, with P1 being most critical.`;
 
