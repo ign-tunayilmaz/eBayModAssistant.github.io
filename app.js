@@ -202,8 +202,20 @@ AVAILABLE MODERATION ACTIONS (match EOS report tracking):
 - Steer: Redirect discussion, lock heated threads, guide behavior
 - Remove: Delete post entirely (spam, severe violations)
 - Ban: Temporarily or permanently restrict user access
-- Locked: Lock thread from further replies
+- Locked: Lock thread from further replies (use for necroposting, heated discussions)
 - Moved: Move post/thread to appropriate board or category
+
+CRITICAL P1 PRIORITY RULES:
+1. NECROPOSTING TAKES PRECEDENCE: If thread >6 months old, action=Locked regardless of other violations
+2. PRIVACY VIOLATIONS: Screenshots/images with personal info → Edit (remove image), use descriptive QUOTE like "A screenshot containing buyer's full address"
+3. MULTIPLE VIOLATIONS: Prioritize the primary issue (necro > privacy > content quality)
+4. SELF-REPORTS: User reporting their own mistake (often necroposting) → still apply standard rules
+
+TEMPLATE POPULATION RULES (CRITICAL):
+- For "Edited Post" templates: [HERE] = full post title in quotes (not a link)
+- GUIDELINES field = description text ONLY (NO numbers like "GG05:" or "SG10:")
+- QUOTE field = actual removed text OR descriptive explanation for non-text content (images, screenshots, videos)
+- USERNAME = violator's username, not reporter's username
 
 Consider context, user intent, and severity when making recommendations. Priority levels (P1-P5) indicate urgency, with P1 being most critical.`;
 
