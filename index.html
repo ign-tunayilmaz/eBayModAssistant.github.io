@@ -136,6 +136,7 @@
             const [aiPriority, setAiPriority] = useState("P3");
             const [aiSuggestion, setAiSuggestion] = useState(null);
             const [aiFinalAction, setAiFinalAction] = useState("");
+            const [aiPostDateTime, setAiPostDateTime] = useState("");
             const [aiSaved, setAiSaved] = useState([]);
             const [busySuggest, setBusySuggest] = useState(false);
             const [errorSuggest, setErrorSuggest] = useState("");
@@ -1164,6 +1165,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     setAiPriority("P3"); 
                     setAiSuggestion(null); 
                     setAiFinalAction("");
+                    setAiPostDateTime("");
                     setErrorSuggest("");
                     
                 } catch (error) {
@@ -1537,6 +1539,25 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                                             Complete & Track
                                                         </button>
                                                     </div>
+                                                    
+                                                    {/* Date/Time field for Remove action */}
+                                                    {aiSuggestion.action === "Remove" && (
+                                                        <div className={`mt-3 p-3 rounded border ${darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'}`}>
+                                                            <label className={`block text-xs font-medium mb-1 ${textPrimary}`}>
+                                                                📅 Date and Time of Removed Post
+                                                            </label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="e.g., ‎11-09-2025 08:03 PM"
+                                                                value={aiPostDateTime || ''}
+                                                                onChange={(e) => setAiPostDateTime(e.target.value)}
+                                                                className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-400' : 'bg-white border-slate-300'}`}
+                                                            />
+                                                            <p className={`text-xs mt-1 ${textSecondary}`}>
+                                                                💡 Copy from Khoros Care post metadata or scrape from URL
+                                                            </p>
+                                                        </div>
+                                                    )}
                                                     <p className={`text-xs mt-2 ${textSecondary}`}>
                                                         <strong>This will automatically:</strong> ✓ Update your main P1-P4 counters above ✓ Track AI interaction for learning
                                                         {aiPriority === "P5" && <span className="text-orange-500"> (P5 mapped to P4 counter)</span>}
