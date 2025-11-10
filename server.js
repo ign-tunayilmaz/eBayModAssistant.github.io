@@ -843,7 +843,7 @@ app.get('/api/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     version: '2.3.0',
-    features: ['learning_patterns', 'training_data', 'advanced_webscraping']
+    features: ['learning_patterns', 'training_data', 'p1_enhancements']
   });
 });
 
