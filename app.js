@@ -888,41 +888,41 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
               className: `text-xs px-3 py-1 rounded ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`
             }, 'Reset All')
           ),
-          h('div', { className: 'grid grid-cols-5 gap-3' },
+          h('div', { className: 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3' },
             ['P1', 'P2', 'P3', 'P4'].map((priority) => {
               const total = getTotalForPriority(priority);
               const isOpen = openDropdown === priority;
               const narCount = (counters[priority] && counters[priority].NAR) || 0;
               return h('div', { 
                 key: priority, 
-                className: `${cardBg} rounded-lg p-3 border-2 ${borderColor} relative`,
+                className: `${cardBg} rounded-lg p-2 sm:p-3 border-2 ${borderColor} relative min-w-0`,
                 ref: (el) => { if (el) dropdownRefs.current[priority] = el; }
               },
                 h('div', { className: `text-xs font-semibold mb-1 text-center ${textSecondary}` }, priority),
-                h('div', { className: 'text-3xl font-bold text-blue-600 mb-2 text-center' }, total),
+                h('div', { className: 'text-2xl sm:text-3xl font-bold text-blue-600 mb-2 text-center' }, total),
                 h('button', { 
                   onClick: () => setOpenDropdown(isOpen ? null : priority),
-                  className: 'w-full py-2 bg-blue-100 hover:bg-blue-200 rounded flex items-center justify-center gap-1 mb-2'
+                  className: 'w-full py-1.5 sm:py-2 bg-blue-100 hover:bg-blue-200 rounded flex items-center justify-center gap-1 mb-2'
                 },
                   isOpen 
                     ? h(React.Fragment, null, h('span', { className: 'text-xs font-semibold text-blue-700' }, 'Close'), h(ChevronUp, { className: 'w-3 h-3 text-blue-700' }))
                     : h(Plus, { className: 'w-4 h-4 text-blue-700' })
                 ),
-                h('div', { className: 'flex items-center justify-center gap-2' },
+                h('div', { className: 'flex items-center justify-center gap-1' },
                   h('button', { 
                     onClick: () => removeFlag(priority, 'NAR'),
-                    className: 'w-7 h-7 flex items-center justify-center rounded flex-shrink-0 transition-colors',
+                    className: 'w-6 h-6 flex items-center justify-center rounded flex-shrink-0 transition-colors',
                     style: { backgroundColor: 'rgb(254, 226, 226)' }
-                  }, h(Minus, { className: 'w-3.5 h-3.5 text-red-600' })),
-                  h('div', { className: `px-2 py-1 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-800'} min-w-[60px] text-center` },
-                    h('span', { className: 'text-xs font-medium text-gray-300' }, 'NAR '),
-                    h('span', { className: 'text-sm font-bold text-white' }, narCount)
+                  }, h(Minus, { className: 'w-3 h-3 text-red-600' })),
+                  h('div', { className: `px-1.5 py-0.5 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-800'} text-center flex-shrink-0` },
+                    h('span', { className: 'text-xs font-medium text-gray-300 whitespace-nowrap' }, 'NAR '),
+                    h('span', { className: 'text-xs font-bold text-white' }, narCount)
                   ),
                   h('button', { 
                     onClick: () => addFlag(priority, 'NAR'),
-                    className: 'w-7 h-7 flex items-center justify-center rounded flex-shrink-0 transition-colors',
+                    className: 'w-6 h-6 flex items-center justify-center rounded flex-shrink-0 transition-colors',
                     style: { backgroundColor: 'rgb(220, 252, 231)' }
-                  }, h(Plus, { className: 'w-3.5 h-3.5 text-green-600' }))
+                  }, h(Plus, { className: 'w-3 h-3 text-green-600' }))
                 ),
                 isOpen && h('div', { className: `absolute top-full left-1/2 -translate-x-1/2 mt-2 ${cardBg} border-2 ${borderColor} rounded-lg shadow-lg z-10 p-2 w-48` },
                   h('div', { className: 'space-y-2' },
@@ -950,12 +950,12 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
                 )
               );
             }),
-            h('div', { className: 'bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-3 border-2 border-blue-400 text-center' },
+            h('div', { className: 'bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-2 sm:p-3 border-2 border-blue-400 text-center min-w-0' },
               h('div', { className: 'text-xs font-semibold text-blue-100 mb-1' }, 'TOTAL'),
-              h('div', { className: 'text-3xl font-bold text-white mb-3' }, getTotalFlags()),
+              h('div', { className: 'text-2xl sm:text-3xl font-bold text-white mb-2 sm:mb-3' }, getTotalFlags()),
               h('button', { 
                 onClick: () => setShowEOSReport(true),
-                className: 'w-full py-2 bg-white hover:bg-blue-50 text-blue-600 rounded font-semibold text-sm'
+                className: 'w-full py-1.5 sm:py-2 bg-white hover:bg-blue-50 text-blue-600 rounded font-semibold text-sm'
               }, 'EOS')
             )
           )
