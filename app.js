@@ -65,8 +65,7 @@ const ModerationTool = () => {
     P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
     P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
     P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-    P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-    P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
+    P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
   });
 
   const [adminNoteInputs, setAdminNoteInputs] = useState({
@@ -802,8 +801,7 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
       P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
       P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
       P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-      P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-      P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
+      P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
     };
     setCounters(emptyCounters);
     setShowResetConfirm(false);
@@ -820,7 +818,7 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
   const generateEOSReport = () => {
     const totalFlags = getTotalFlags();
     let report = '**Posts QAed: ' + totalFlags + '**\n';
-    ['P1', 'P2', 'P3', 'P4', 'P5'].forEach(priority => {
+    ['P1', 'P2', 'P3', 'P4'].forEach(priority => {
       const total = getTotalForPriority(priority);
       if (total > 0) {
         report += '* ' + priority + ' reports: ' + total + '\n';

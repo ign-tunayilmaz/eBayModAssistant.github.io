@@ -152,8 +152,7 @@
                 P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
                 P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
                 P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-                P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-                P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
+                P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
             });
 
             const [templateInputs, setTemplateInputs] = useState({
@@ -1038,8 +1037,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
                     P2: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
                     P3: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-                    P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
-                    P5: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
+                    P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
                 };
                 setCounters(emptyCounters);
                 setShowResetConfirm(false);
@@ -1118,8 +1116,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                         console.warn(`⚠️ Unknown action "${aiFinalAction}" - not in EOS tracking system`);
                     }
                     
-                    // Update existing counter system (P1-P5)
-                    const validPriority = ["P1", "P2", "P3", "P4", "P5"].includes(aiPriority) ? aiPriority : "P4";
+                    // Update existing counter system (P1-P4 only, P5 maps to P4)
+                    const validPriority = ["P1", "P2", "P3", "P4"].includes(aiPriority) ? aiPriority : "P4";
                     
                     if (counters[validPriority] && counters[validPriority][counterAction] !== undefined) {
                         addFlag(validPriority, counterAction);
@@ -1304,7 +1302,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
             const generateEOSReport = () => {
                 const totalFlags = getTotalFlags();
                 let report = `**Posts QAed: ${totalFlags}**\n`;
-                ['P1', 'P2', 'P3', 'P4', 'P5'].forEach(priority => {
+                ['P1', 'P2', 'P3', 'P4'].forEach(priority => {
                     const total = getTotalForPriority(priority);
                     if (total > 0) {
                         report += `* ${priority} reports: ${total}\n`;
@@ -1369,8 +1367,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                         Reset All
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-5 gap-3">
-                                    {['P1', 'P2', 'P3', 'P4', 'P5'].map((priority) => {
+                                <div className="grid grid-cols-4 gap-3">
+                                    {['P1', 'P2', 'P3', 'P4'].map((priority) => {
                                         const total = getTotalForPriority(priority);
                                         const isOpen = openDropdown === priority;
                                         return (
@@ -1576,7 +1574,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                                         </div>
                                                     )}
                                                     <p className={`text-xs mt-2 ${textSecondary}`}>
-                                                        <strong>This will automatically:</strong> ✓ Update your main P1-P5 counters above ✓ Track AI interaction for learning
+                                                        <strong>This will automatically:</strong> ✓ Update your main P1-P4 counters above ✓ Track AI interaction for learning
+                                                        {aiPriority === "P5" && <span className="text-orange-500"> (P5 mapped to P4 counter)</span>}
                                                     </p>
                                                 </div>
                                             </div>
