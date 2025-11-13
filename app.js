@@ -73,6 +73,7 @@ const ModerationTool = () => {
   });
 
   const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
+  const dropdownActionTypes = modActionTypes.filter(actionType => actionType !== 'NAR');
   const AI_ACTIONS = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved']; // Aligned with EOS report actions
 
   // Global Learning System Functions
@@ -891,6 +892,7 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
             ['P1', 'P2', 'P3', 'P4'].map((priority) => {
               const total = getTotalForPriority(priority);
               const isOpen = openDropdown === priority;
+              const narCount = (counters[priority] && counters[priority].NAR) || 0;
               return h('div', { 
                 key: priority, 
                 className: `${cardBg} rounded-lg p-3 border-2 ${borderColor} relative`,
@@ -900,13 +902,31 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
                 h('div', { className: 'text-3xl font-bold text-blue-600 mb-2 text-center' }, total),
                 h('button', { 
                   onClick: () => setOpenDropdown(isOpen ? null : priority),
-                  className: 'w-full py-2 bg-blue-100 hover:bg-blue-200 rounded flex items-center justify-center gap-1'
+                  className: 'w-full py-2 bg-blue-100 hover:bg-blue-200 rounded flex items-center justify-center gap-1 mb-2'
                 },
-                  isOpen ? h(React.Fragment, null, h('span', { className: 'text-xs font-semibold text-blue-700' }, 'Close'), h(ChevronUp, { className: 'w-3 h-3 text-blue-700' })) : h(Plus, { className: 'w-4 h-4 text-blue-700' })
+                  isOpen 
+                    ? h(React.Fragment, null, h('span', { className: 'text-xs font-semibold text-blue-700' }, 'Close'), h(ChevronUp, { className: 'w-3 h-3 text-blue-700' }))
+                    : h(Plus, { className: 'w-4 h-4 text-blue-700' })
+                ),
+                h('div', { className: 'flex items-center justify-center gap-2' },
+                  h('button', { 
+                    onClick: () => removeFlag(priority, 'NAR'),
+                    className: 'w-7 h-7 flex items-center justify-center rounded flex-shrink-0 transition-colors',
+                    style: { backgroundColor: 'rgb(254, 226, 226)' }
+                  }, h(Minus, { className: 'w-3.5 h-3.5 text-red-600' })),
+                  h('div', { className: `px-2 py-1 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-800'} min-w-[60px] text-center` },
+                    h('span', { className: 'text-xs font-medium text-gray-300' }, 'NAR '),
+                    h('span', { className: 'text-sm font-bold text-white' }, narCount)
+                  ),
+                  h('button', { 
+                    onClick: () => addFlag(priority, 'NAR'),
+                    className: 'w-7 h-7 flex items-center justify-center rounded flex-shrink-0 transition-colors',
+                    style: { backgroundColor: 'rgb(220, 252, 231)' }
+                  }, h(Plus, { className: 'w-3.5 h-3.5 text-green-600' }))
                 ),
                 isOpen && h('div', { className: `absolute top-full left-1/2 -translate-x-1/2 mt-2 ${cardBg} border-2 ${borderColor} rounded-lg shadow-lg z-10 p-2 w-48` },
                   h('div', { className: 'space-y-2' },
-                    modActionTypes.map(actionType => {
+                    dropdownActionTypes.map(actionType => {
                       const count = counters[priority][actionType] || 0;
                       return h('div', { 
                         key: actionType, 
@@ -1501,7 +1521,7 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
       ),
       h('div', { className: `rounded-lg shadow p-4 text-center text-sm ${cardBg} ${textSecondary} border ${borderColor}` },
         h('p', null, 'Contact: ', h('a', { href: 'mailto:tuna.yilmaz@ignitetech.ai', className: 'text-blue-600 underline' }, 'tuna.yilmaz@ignitetech.ai'), ', ', h('a', { href: 'mailto:c-tuna.yilmaz@khoros.com', className: 'text-blue-600 underline' }, 'c-tuna.yilmaz@khoros.com'), ', ', h('a', { href: 'mailto:lightattah@ignitetech.com', className: 'text-blue-600 underline' }, 'lightattah@ignitetech.com'), ' or ', h('a', { href: 'mailto:c-light.attah@khoros.com', className: 'text-blue-600 underline' }, 'c-light.attah@khoros.com')),
-        h('p', { className: 'mt-2 text-xs' }, 'Version 2.3.0')
+        h('p', { className: 'mt-2 text-xs' }, 'Version 2.3.1')
       )
     )
   );

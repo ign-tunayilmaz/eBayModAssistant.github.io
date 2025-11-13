@@ -1,0 +1,13 @@
+{
+  "entries": {},
+  "stats": {
+    "totalRequests": 0,
+    "cacheHits": 0,
+    "cacheMisses": 0,
+    "successfulScrapes": 0,
+    "failedScrapes": 0,
+    "lastCleanup": "2025-11-13T20:56:30.656Z"
+  },
+  "createdDate": "2025-11-13T20:56:30.657Z",
+  "version": "2.3.1"
+}
