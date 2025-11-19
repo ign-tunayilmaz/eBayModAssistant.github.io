@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>eBay Moderation Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Using cdnjs for better reliability -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
@@ -102,6 +103,12 @@
             </svg>
         );
 
+        const FileText = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        );
+
         const ModerationTool = () => {
             // State for collapsed menus (all false by default)
             const [showAdditionalTemplates, setShowAdditionalTemplates] = useState(false);
@@ -111,6 +118,7 @@
             const [showAdminNotes, setShowAdminNotes] = useState(false);
             const [showFAQ, setShowFAQ] = useState(false);
             const [showAI, setShowAI] = useState(false);
+            const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
             const [expandedGuidelines, setExpandedGuidelines] = useState({});
             const [guidelinesSearch, setGuidelinesSearch] = useState('');
 
@@ -173,6 +181,14 @@
             const [showEOSReport, setShowEOSReport] = useState(false);
             const [showResetConfirm, setShowResetConfirm] = useState(false);
             const dropdownRefs = useRef({});
+            
+            // Keyboard shortcuts configuration
+            const [keyboardShortcuts, setKeyboardShortcuts] = useState({
+                p1Nar: { ctrl: true, alt: false, key: '1', action: 'P1 NAR', description: 'Increase P1 NAR counter' },
+                p2Nar: { ctrl: true, alt: false, key: '2', action: 'P2 NAR', description: 'Increase P2 NAR counter' },
+                p3Nar: { ctrl: true, alt: false, key: '3', action: 'P3 NAR', description: 'Increase P3 NAR counter' },
+                p4Nar: { ctrl: true, alt: false, key: '4', action: 'P4 NAR', description: 'Increase P4 NAR counter' }
+            });
 
             const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
             const dropdownActionTypes = modActionTypes.filter(actionType => actionType !== 'NAR');
@@ -702,7 +718,70 @@ Provide your analysis in the exact JSON format specified in your instructions.`
 
             // Admin keyboard shortcuts and console access
             useEffect(() => {
+                console.log('🎨 Keyboard shortcuts initialized:', keyboardShortcuts);
+                
                 const handleKeyDown = (event) => {
+                    // Skip if user is typing in an input field (except for specific shortcuts)
+                    const isInputField = event.target.tagName === 'INPUT' || 
+                                       event.target.tagName === 'TEXTAREA' || 
+                                       event.target.isContentEditable;
+                    
+                    // Debug logging - test with ANY key press
+                    if (['1','2','3','4'].includes(event.key) || ['Digit1','Digit2','Digit3','Digit4'].includes(event.code)) {
+                        console.log('🔍 Key pressed:', {
+                            key: event.key,
+                            code: event.code,
+                            ctrl: event.ctrlKey,
+                            shift: event.shiftKey,
+                            alt: event.altKey,
+                            metaKey: event.metaKey,
+                            isInputField: isInputField,
+                            target: event.target.tagName
+                        });
+                        console.log('📋 Current shortcuts:', keyboardShortcuts);
+                    }
+                    
+                    // Check custom keyboard shortcuts
+                    for (const [shortcutId, shortcut] of Object.entries(keyboardShortcuts)) {
+                        // Check if modifier keys match exactly (Shift is always ignored for number shortcuts)
+                        const ctrlMatch = shortcut.ctrl === event.ctrlKey;
+                        const altMatch = shortcut.alt === event.altKey;
+                        
+                        // Match by physical key code OR character (for Alt combinations that change the character)
+                        const codeMap = {'1': 'Digit1', '2': 'Digit2', '3': 'Digit3', '4': 'Digit4'};
+                        const keyMatch = event.key.toLowerCase() === shortcut.key.toLowerCase() || 
+                                       event.code === codeMap[shortcut.key] ||
+                                       event.code === 'Numpad' + shortcut.key;
+                        
+                        if (ctrlMatch && altMatch && keyMatch) {
+                            console.log('🎯 Shortcut matched:', shortcutId, shortcut.action);
+                            
+                            // Only prevent default if not in input field, or if it's a custom shortcut
+                            if (!isInputField || event.ctrlKey || event.altKey) {
+                                event.preventDefault();
+                            }
+                            
+                            // Execute the action
+                            if (shortcut.action === 'P1 NAR') {
+                                addFlag('P1', 'NAR');
+                                console.log('✅ P1 NAR increased via keyboard shortcut');
+                            } else if (shortcut.action === 'P2 NAR') {
+                                addFlag('P2', 'NAR');
+                                console.log('✅ P2 NAR increased via keyboard shortcut');
+                            } else if (shortcut.action === 'P3 NAR') {
+                                addFlag('P3', 'NAR');
+                                console.log('✅ P3 NAR increased via keyboard shortcut');
+                            } else if (shortcut.action === 'P4 NAR') {
+                                addFlag('P4', 'NAR');
+                                console.log('✅ P4 NAR increased via keyboard shortcut');
+                            }
+                            
+                            // Break after first match
+                            return;
+                        }
+                    }
+                    
+                    // Admin shortcuts (always available)
                     if (event.ctrlKey && event.shiftKey && event.key === 'T') {
                         event.preventDefault();
                         exportTrainingData();
@@ -723,7 +802,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 };
                 
                 return () => document.removeEventListener('keydown', handleKeyDown);
-            }, [trainingData]);
+            }, [trainingData, addFlag, keyboardShortcuts]);
 
 
 
@@ -736,6 +815,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     const savedTemplateInputs = localStorage.getItem('ebay-mod-template-inputs');
                     const savedAdminNotes = localStorage.getItem('ebay-mod-admin-notes');
                     const savedDarkMode = localStorage.getItem('ebay-mod-dark-mode');
+                    const savedKeyboardShortcuts = localStorage.getItem('ebay-mod-keyboard-shortcuts');
                     
                     // Load AI settings
                     const savedApiBase = localStorage.getItem('ebay-mod-api-base') || "";
@@ -748,6 +828,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     if (savedTemplateInputs) setTemplateInputs(JSON.parse(savedTemplateInputs));
                     if (savedAdminNotes) setAdminNoteInputs(JSON.parse(savedAdminNotes));
                     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+                    if (savedKeyboardShortcuts) setKeyboardShortcuts(JSON.parse(savedKeyboardShortcuts));
                     
                     setApiBase(savedApiBase);
                     setApiKey(savedApiKey);
@@ -794,6 +875,15 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     console.error('Error saving dark mode:', error);
                 }
             }, [darkMode]);
+            
+            // Save keyboard shortcuts to localStorage
+            useEffect(() => {
+                try {
+                    localStorage.setItem('ebay-mod-keyboard-shortcuts', JSON.stringify(keyboardShortcuts));
+                } catch (error) {
+                    console.error('Error saving keyboard shortcuts:', error);
+                }
+            }, [keyboardShortcuts]);
 
             // Save training data to localStorage
             useEffect(() => {
@@ -947,6 +1037,28 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     console.error('Failed to copy');
                 }
             };
+            
+            const copyToAdminNotes = (templateId) => {
+                const inputs = templateInputs[templateId] || {};
+                // Leave link empty for manual entry
+                const removed = inputs.quote || '';
+                const violation = inputs.guidelines || '';
+                
+                // Update admin note inputs with the template data (link left empty)
+                setAdminNoteInputs({
+                    edited: {
+                        link: '',
+                        removed: removed,
+                        violation: violation
+                    }
+                });
+                
+                // Show a brief confirmation
+                setCopiedId(templateId + '-admin');
+                setTimeout(() => setCopiedId(null), 2000);
+                
+                console.log('✅ Copied to Admin Notes:', { removed: removed, violation: violation });
+            };
 
             const updateTemplateInput = (templateId, field, value) => {
                 setTemplateInputs(prev => ({
@@ -1041,6 +1153,22 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     P4: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 }
                 };
                 setCounters(emptyCounters);
+                
+                // Clear all template textboxes
+                setTemplateInputs({
+                    friendlyRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+                    warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+                    friendlyEditedPost: { url: '', username: '', title: '', guidelines: '', quote: '' },
+                    warningEditedPost: { url: '', username: '', title: '', guidelines: '', quote: '' },
+                    csRedirect: { url: '', username: '' },
+                    banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+                });
+                
+                // Clear admin note inputs
+                setAdminNoteInputs({
+                    edited: { link: '', removed: '', violation: '' }
+                });
+                
                 setShowResetConfirm(false);
             };
 
@@ -1388,9 +1516,9 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                                     >
                                                         <Minus className="w-3 h-3 text-red-600" />
                                                     </button>
-                                                    <div className={`px-1.5 py-0.5 rounded ${darkMode ? 'bg-gray-800' : 'bg-gray-800'} text-center flex-shrink-0`}>
-                                                        <span className="text-xs font-medium text-gray-300 whitespace-nowrap">NAR </span>
-                                                        <span className="text-xs font-bold text-white">{narCount}</span>
+                                                    <div className={`px-1.5 py-0.5 rounded ${darkMode ? 'bg-gray-800' : 'bg-white border border-slate-300'} text-center flex-shrink-0`}>
+                                                        <span className={`text-xs font-medium whitespace-nowrap ${darkMode ? 'text-gray-300' : 'text-black'}`}>NAR </span>
+                                                        <span className={`text-xs font-bold ${darkMode ? 'text-white' : 'text-black'}`}>{narCount}</span>
                                                     </div>
                                                     <button
                                                         onClick={() => addFlag(priority, 'NAR')}
@@ -1927,6 +2055,11 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                                             <button onClick={() => copyToClipboard(populatedContent, template.id)} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
                                                                 {copiedId === template.id ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
                                                             </button>
+                                                            {['friendlyRemovedPost', 'warningRemovedPost', 'friendlyEditedPost', 'warningEditedPost'].includes(template.id) && (
+                                                                <button onClick={() => copyToAdminNotes(template.id)} className={`flex items-center gap-2 px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-emerald-500 hover:bg-emerald-600 text-white'}`}>
+                                                                    {copiedId === template.id + '-admin' ? (<><Check className="w-4 h-4" />Copied</>) : (<><FileText className="w-4 h-4" />Admin Notes</>)}
+                                                                </button>
+                                                            )}
                                                             <button onClick={() => setExpandedTemplates({...expandedTemplates, [template.id]: !isExpanded})} className={`flex items-center gap-1 px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-600 hover:bg-slate-500 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>
                                                                 {isExpanded ? (<><ChevronUp className="w-4 h-4" />Hide</>) : (<><ChevronDown className="w-4 h-4" />Show</>)}
                                                             </button>
@@ -2148,10 +2281,109 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                         </div>
 
 
+                        {/* Keyboard Shortcuts Section - COLLAPSED BY DEFAULT */}
+                        <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
+                            <button onClick={() => setShowKeyboardShortcuts(!showKeyboardShortcuts)} className="w-full flex items-center justify-between mb-3">
+                                <h3 className={`font-semibold ${textPrimary}`}>⌨️ Keyboard Shortcuts</h3>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-sm ${textSecondary}`}>{showKeyboardShortcuts ? 'Hide' : 'Show'}</span>
+                                    {showKeyboardShortcuts ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
+                                </div>
+                            </button>
+                            {showKeyboardShortcuts && (
+                                <div className="space-y-3">
+                                    <p className={`text-sm ${textSecondary} mb-4`}>
+                                        Customize your keyboard shortcuts for quick actions. Use Ctrl and/or Alt modifiers with any key. (Note: Shift is not supported for number key shortcuts)
+                                    </p>
+                                    {Object.entries(keyboardShortcuts).map(([shortcutId, shortcut]) => (
+                                        <div key={shortcutId} className={`border rounded-lg p-3 ${borderColor} ${darkMode ? 'bg-slate-700' : 'bg-slate-50'}`}>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div>
+                                                    <div className={`font-semibold text-sm ${textPrimary}`}>{shortcut.action}</div>
+                                                    <div className={`text-xs ${textSecondary}`}>{shortcut.description}</div>
+                                                </div>
+                                                <div className={`px-3 py-2 rounded border ${darkMode ? 'bg-slate-800 border-slate-600 text-slate-200' : 'bg-white border-slate-300 text-slate-700'} font-mono text-sm`}>
+                                                    {shortcut.ctrl && 'Ctrl + '}
+                                                    {shortcut.alt && 'Alt + '}
+                                                    {shortcut.key.toUpperCase()}
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className={`block text-xs mb-1 ${textSecondary}`}>Modifiers</label>
+                                                    <div className="flex gap-2">
+                                                        <label className="flex items-center gap-1 cursor-pointer">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={shortcut.ctrl}
+                                                                onChange={(e) => {
+                                                                    setKeyboardShortcuts({
+                                                                        ...keyboardShortcuts,
+                                                                        [shortcutId]: { ...shortcut, ctrl: e.target.checked }
+                                                                    });
+                                                                }}
+                                                                className="cursor-pointer"
+                                                            />
+                                                            <span className={`text-xs ${textSecondary}`}>Ctrl</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-1 cursor-pointer">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={shortcut.alt}
+                                                                onChange={(e) => {
+                                                                    setKeyboardShortcuts({
+                                                                        ...keyboardShortcuts,
+                                                                        [shortcutId]: { ...shortcut, alt: e.target.checked }
+                                                                    });
+                                                                }}
+                                                                className="cursor-pointer"
+                                                            />
+                                                            <span className={`text-xs ${textSecondary}`}>Alt</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className={`block text-xs mb-1 ${textSecondary}`}>Key</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={shortcut.key}
+                                                        onChange={(e) => {
+                                                            const key = e.target.value.slice(-1).toLowerCase();
+                                                            if (key) {
+                                                                setKeyboardShortcuts({
+                                                                    ...keyboardShortcuts,
+                                                                    [shortcutId]: { ...shortcut, key }
+                                                                });
+                                                            }
+                                                        }}
+                                                        maxLength="1"
+                                                        className={`w-full px-2 py-1 text-sm border rounded text-center font-mono uppercase ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button 
+                                        onClick={() => {
+                                            setKeyboardShortcuts({
+                                                p1Nar: { ctrl: true, alt: false, key: '1', action: 'P1 NAR', description: 'Increase P1 NAR counter' },
+                                                p2Nar: { ctrl: true, alt: false, key: '2', action: 'P2 NAR', description: 'Increase P2 NAR counter' },
+                                                p3Nar: { ctrl: true, alt: false, key: '3', action: 'P3 NAR', description: 'Increase P3 NAR counter' },
+                                                p4Nar: { ctrl: true, alt: false, key: '4', action: 'P4 NAR', description: 'Increase P4 NAR counter' }
+                                            });
+                                        }}
+                                        className={`w-full py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`}
+                                    >
+                                        Reset to Defaults
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Footer */}
                         <div className={`rounded-lg shadow p-4 text-center text-sm ${cardBg} ${textSecondary} border ${borderColor}`}>
                         <p>Contact: <a href="mailto:tuna.yilmaz@ignitetech.com" className="text-blue-600 underline">tuna.yilmaz@ignitetech.com</a> &amp; <a href="mailto:light.attah@ignitetech.com" className="text-blue-600 underline">light.attah@ignitetech.com</a></p>
-                        <p className="mt-2 text-xs">Version 2.3.1</p>
+                        <p className="mt-2 text-xs">Version 2.3.2</p>
                         </div>
                     </div>
 
