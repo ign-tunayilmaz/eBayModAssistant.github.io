@@ -173,7 +173,8 @@
             });
 
             const [adminNoteInputs, setAdminNoteInputs] = useState({
-                edited: { link: '', removed: '', violation: '' }
+                edited: { link: '', removed: '', violation: '' },
+                removed: { link: '', violation: '' }
             });
 
             const [copiedId, setCopiedId] = useState(null);
@@ -624,23 +625,16 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 }
             };
 
-            // Admin Notes specific function - populates with clean violation name only
-            const selectAdminNoteViolation = (guidelineId) => {
+            // Admin Notes - handle guideline selection
+            const selectAdminGuideline = (noteType, guidelineId) => {
                 if (guidelineId === 'other') {
-                    // Clear the field and focus on the text input for custom entry
-                    updateAdminNoteInput('edited', 'violation', '');
-                    setTimeout(() => {
-                        const violationInput = document.querySelector('[data-admin-field="violation"]');
-                        if (violationInput) {
-                            violationInput.focus();
-                        }
-                    }, 50);
+                    updateAdminNoteInput(noteType, 'violation', '');
                 } else {
                     const guideline = guidelineOptions.find(g => g.id === guidelineId);
                     if (guideline) {
                         // Extract clean name from "GG01: Be respectful" -> "Be respectful"
                         const cleanName = guideline.name.replace(/^[SG]+\d+:\s*/, '');
-                        updateAdminNoteInput('edited', 'violation', cleanName);
+                        updateAdminNoteInput(noteType, 'violation', cleanName);
                     }
                 }
             };
@@ -826,7 +820,14 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     
                     if (savedCounters) setCounters(JSON.parse(savedCounters));
                     if (savedTemplateInputs) setTemplateInputs(JSON.parse(savedTemplateInputs));
-                    if (savedAdminNotes) setAdminNoteInputs(JSON.parse(savedAdminNotes));
+                    if (savedAdminNotes) {
+                        const parsedNotes = JSON.parse(savedAdminNotes);
+                        // Ensure both edited and removed properties exist
+                        setAdminNoteInputs({
+                            edited: parsedNotes.edited || { link: '', removed: '', violation: '' },
+                            removed: parsedNotes.removed || { link: '', violation: '' }
+                        });
+                    }
                     if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
                     if (savedKeyboardShortcuts) setKeyboardShortcuts(JSON.parse(savedKeyboardShortcuts));
                     
@@ -1040,24 +1041,38 @@ Provide your analysis in the exact JSON format specified in your instructions.`
             
             const copyToAdminNotes = (templateId) => {
                 const inputs = templateInputs[templateId] || {};
-                // Leave link empty for manual entry
                 const removed = inputs.quote || '';
                 const violation = inputs.guidelines || '';
                 
-                // Update admin note inputs with the template data (link left empty)
-                setAdminNoteInputs({
-                    edited: {
-                        link: '',
-                        removed: removed,
-                        violation: violation
-                    }
-                });
+                // Determine if this is an edited or removed post template
+                const isRemovedPost = templateId.includes('Removed');
+                
+                if (isRemovedPost) {
+                    // Update removed post admin notes (no "removed portion" field)
+                    setAdminNoteInputs(prev => ({
+                        ...prev,
+                        removed: {
+                            link: '',
+                            violation: violation
+                        }
+                    }));
+                } else {
+                    // Update edited post admin notes (has "removed portion" field)
+                    setAdminNoteInputs(prev => ({
+                        ...prev,
+                        edited: {
+                            link: '',
+                            removed: removed,
+                            violation: violation
+                        }
+                    }));
+                }
                 
                 // Show a brief confirmation
                 setCopiedId(templateId + '-admin');
                 setTimeout(() => setCopiedId(null), 2000);
                 
-                console.log('✅ Copied to Admin Notes:', { removed: removed, violation: violation });
+                console.log('✅ Copied to Admin Notes:', { type: isRemovedPost ? 'removed' : 'edited', removed: removed, violation: violation });
             };
 
             const updateTemplateInput = (templateId, field, value) => {
@@ -1111,10 +1126,17 @@ Provide your analysis in the exact JSON format specified in your instructions.`
             };
 
             const updateAdminNoteInput = (noteId, field, value) => {
-                setAdminNoteInputs(prev => ({
-                    ...prev,
-                    [noteId]: { ...prev[noteId], [field]: value }
-                }));
+                setAdminNoteInputs(prev => {
+                    // Ensure the noteId object exists before updating
+                    const currentNote = prev[noteId] || (noteId === 'edited' 
+                        ? { link: '', removed: '', violation: '' }
+                        : { link: '', violation: '' });
+                    
+                    return {
+                        ...prev,
+                        [noteId]: { ...currentNote, [field]: value }
+                    };
+                });
             };
 
             const clearAdminNoteInputs = (noteId) => {
@@ -1123,12 +1145,22 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                         ...prev,
                         edited: { link: '', removed: '', violation: '' }
                     }));
+                } else if (noteId === 'removed') {
+                    setAdminNoteInputs(prev => ({
+                        ...prev,
+                        removed: { link: '', violation: '' }
+                    }));
                 }
             };
 
             const getPopulatedAdminNote = (noteId) => {
-                const inputs = adminNoteInputs[noteId];
-                return '<a href="' + (inputs.link || '[link]') + '">Edited Post</a> to remove "' + (inputs.removed || '[removed portion]') + '".<br>Sent user a friendly PM for: ' + (inputs.violation || '[violation]');
+                const inputs = adminNoteInputs[noteId] || {};
+                if (noteId === 'edited') {
+                    return '<a href="' + (inputs.link || '[link]') + '">Edited Post</a> to remove "' + (inputs.removed || '[removed portion]') + '".<br>Sent user a friendly PM for: ' + (inputs.violation || '[violation]');
+                } else if (noteId === 'removed') {
+                    return '<a href="' + (inputs.link || '[link]') + '">Removed Post</a><br>Sent user a friendly PM for: ' + (inputs.violation || '[violation]');
+                }
+                return '';
             };
 
             const addFlag = (priority, actionType) => {
@@ -1166,7 +1198,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 
                 // Clear admin note inputs
                 setAdminNoteInputs({
-                    edited: { link: '', removed: '', violation: '' }
+                    edited: { link: '', removed: '', violation: '' },
+                    removed: { link: '', violation: '' }
                 });
                 
                 setShowResetConfirm(false);
@@ -2190,63 +2223,116 @@ Provide your analysis in the exact JSON format specified in your instructions.`
 
                         {/* Admin Notes Section - COLLAPSED BY DEFAULT */}
                         <div className={`${cardBg} rounded-lg shadow p-4 mb-6 border ${borderColor}`}>
-                            <div className="flex items-center justify-between mb-3">
+                            <button onClick={() => setShowAdminNotes(!showAdminNotes)} className="w-full flex items-center justify-between mb-3">
                                 <h3 className={`font-semibold ${textPrimary}`}>Admin Notes</h3>
                                 <div className="flex items-center gap-2">
-                                    {showAdminNotes && (
-                                        <>
-                                            <button onClick={() => copyToClipboard(getPopulatedAdminNote('edited'), 'admin-edited')} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
-                                                {copiedId === 'admin-edited' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
-                                            </button>
-                                            <button onClick={() => clearAdminNoteInputs('edited')} className={`flex items-center gap-2 px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>Clear</button>
-                                        </>
-                                    )}
-                                    <button onClick={() => setShowAdminNotes(!showAdminNotes)} className="flex items-center gap-1">
-                                        <span className={`text-sm ${textSecondary}`}>{showAdminNotes ? 'Hide' : 'Show'}</span>
-                                        {showAdminNotes ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
-                                    </button>
+                                    <span className={`text-sm ${textSecondary}`}>{showAdminNotes ? 'Hide' : 'Show'}</span>
+                                    {showAdminNotes ? <ChevronUp className={`w-5 h-5 ${textSecondary}`} /> : <ChevronDown className={`w-5 h-5 ${textSecondary}`} />}
                                 </div>
-                            </div>
+                            </button>
                             {showAdminNotes && (
-                                <div className={`space-y-3 pt-3 border-t ${borderColor}`}>
-                                    <input type="text" placeholder="Link to post" value={adminNoteInputs.edited.link} onChange={(e) => updateAdminNoteInput('edited', 'link', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
-                                    <input type="text" placeholder="Removed portion" value={adminNoteInputs.edited.removed} onChange={(e) => updateAdminNoteInput('edited', 'removed', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
-                                    <div className="space-y-2">
-                                        <div className="flex gap-2">
-                                            <select onChange={(e) => { if (e.target.value) { selectAdminNoteViolation(e.target.value); e.target.value = ''; } }} defaultValue="" className={`flex-1 px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}>
-                                                <option value="">Select Violated Guideline...</option>
-                                                <optgroup label="General Guidelines">
-                                                    <option value="gg01">GG01: Be respectful</option>
-                                                    <option value="gg02">GG02: Meaningful contributions</option>
-                                                    <option value="gg03">GG03: Consequences</option>
-                                                    <option value="gg04">GG04: Reporting Content</option>
-                                                    <option value="gg05">GG05: Personal info</option>
-                                                </optgroup>
-                                                <optgroup label="Specific Guidelines">
-                                                    <option value="sg00">SG00: Refrain from</option>
-                                                    <option value="sg01">SG01: Adult content</option>
-                                                    <option value="sg02">SG02: Threats</option>
-                                                    <option value="sg03">SG03: Dishonest</option>
-                                                    <option value="sg04">SG04: Duplicative</option>
-                                                    <option value="sg05">SG05: Activism</option>
-                                                    <option value="sg06">SG06: Advertising</option>
-                                                    <option value="sg07">SG07: Off-eBay sites</option>
-                                                    <option value="sg08">SG08: Reposted content</option>
-                                                    <option value="sg09">SG09: Mod warnings</option>
-                                                    <option value="sg10">SG10: Naming/shaming</option>
-                                                    <option value="sg11">SG11: Policy violations</option>
-                                                    <option value="sg12">SG12: Copyright</option>
-                                                </optgroup>
-                                                <optgroup label="Custom">
-                                                    <option value="other">✏️ Other (type custom violation)</option>
-                                                </optgroup>
-                                            </select>
-                                            <button onClick={() => updateAdminNoteInput('edited', 'violation', '')} className={`px-3 py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`}>Clear</button>
+                                <div className="space-y-6">
+                                    {/* Edited Post */}
+                                    <div className={`space-y-3 pt-3 border-t ${borderColor}`}>
+                                        <div className="flex items-center justify-between">
+                                            <h4 className={`text-sm font-semibold ${textPrimary}`}>Edited Post</h4>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => copyToClipboard(getPopulatedAdminNote('edited'), 'admin-edited')} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
+                                                    {copiedId === 'admin-edited' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
+                                                </button>
+                                                <button onClick={() => clearAdminNoteInputs('edited')} className={`px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>Clear</button>
+                                            </div>
                                         </div>
-                                        <input type="text" placeholder="Rule violation (select from dropdown or type custom)" value={adminNoteInputs.edited.violation} onChange={(e) => updateAdminNoteInput('edited', 'violation', e.target.value)} data-admin-field="violation" className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                        <input type="text" placeholder="Link to post" value={adminNoteInputs.edited?.link || ''} onChange={(e) => updateAdminNoteInput('edited', 'link', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                        <input type="text" placeholder="Removed portion" value={adminNoteInputs.edited?.removed || ''} onChange={(e) => updateAdminNoteInput('edited', 'removed', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                        <div className="space-y-2">
+                                            <div className="flex gap-2">
+                                                <select onChange={(e) => { if (e.target.value) { selectAdminGuideline('edited', e.target.value); e.target.value = ''; } }} defaultValue="" className={`flex-1 px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}>
+                                                    <option value="">Select Violated Guideline...</option>
+                                                    <optgroup label="General Guidelines">
+                                                        <option value="gg01">GG01: Be respectful</option>
+                                                        <option value="gg02">GG02: Meaningful contributions</option>
+                                                        <option value="gg03">GG03: Consequences</option>
+                                                        <option value="gg04">GG04: Reporting Content</option>
+                                                        <option value="gg05">GG05: Personal info</option>
+                                                    </optgroup>
+                                                    <optgroup label="Specific Guidelines">
+                                                        <option value="sg00">SG00: Refrain from</option>
+                                                        <option value="sg01">SG01: Adult content</option>
+                                                        <option value="sg02">SG02: Threats</option>
+                                                        <option value="sg03">SG03: Dishonest</option>
+                                                        <option value="sg04">SG04: Duplicative</option>
+                                                        <option value="sg05">SG05: Activism</option>
+                                                        <option value="sg06">SG06: Advertising</option>
+                                                        <option value="sg07">SG07: Off-eBay sites</option>
+                                                        <option value="sg08">SG08: Reposted content</option>
+                                                        <option value="sg09">SG09: Mod warnings</option>
+                                                        <option value="sg10">SG10: Naming/shaming</option>
+                                                        <option value="sg11">SG11: Policy violations</option>
+                                                        <option value="sg12">SG12: Copyright</option>
+                                                    </optgroup>
+                                                    <optgroup label="Custom">
+                                                        <option value="other">✏️ Other (type custom violation)</option>
+                                                    </optgroup>
+                                                </select>
+                                                <button onClick={() => updateAdminNoteInput('edited', 'violation', '')} className={`px-3 py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`}>Clear</button>
+                                            </div>
+                                            <input type="text" placeholder="Rule violation (select from dropdown or type custom)" value={adminNoteInputs.edited?.violation || ''} onChange={(e) => updateAdminNoteInput('edited', 'violation', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                        </div>
+                                        <div className={`rounded-lg p-3 border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                            <pre className={`text-xs whitespace-pre-wrap font-mono ${textSecondary}`}>{getPopulatedAdminNote('edited')}</pre>
+                                        </div>
                                     </div>
-                                    <div className={`rounded-lg p-3 border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                        <pre className={`text-xs whitespace-pre-wrap font-mono ${textSecondary}`}>{getPopulatedAdminNote('edited')}</pre>
+
+                                    {/* Removed Post */}
+                                    <div className={`space-y-3 pt-3 border-t ${borderColor}`}>
+                                        <div className="flex items-center justify-between">
+                                            <h4 className={`text-sm font-semibold ${textPrimary}`}>Removed Post</h4>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => copyToClipboard(getPopulatedAdminNote('removed'), 'admin-removed')} className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium">
+                                                    {copiedId === 'admin-removed' ? (<><Check className="w-4 h-4" />Copied</>) : (<><Copy className="w-4 h-4" />Copy</>)}
+                                                </button>
+                                                <button onClick={() => clearAdminNoteInputs('removed')} className={`px-3 py-1 rounded text-sm font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-200 hover:bg-slate-300 text-slate-700'}`}>Clear</button>
+                                            </div>
+                                        </div>
+                                        <input type="text" placeholder="Link to post" value={adminNoteInputs.removed?.link || ''} onChange={(e) => updateAdminNoteInput('removed', 'link', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                        <div className="space-y-2">
+                                            <div className="flex gap-2">
+                                                <select onChange={(e) => { if (e.target.value) { selectAdminGuideline('removed', e.target.value); e.target.value = ''; } }} defaultValue="" className={`flex-1 px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-white border-slate-300'}`}>
+                                                    <option value="">Select Violated Guideline...</option>
+                                                    <optgroup label="General Guidelines">
+                                                        <option value="gg01">GG01: Be respectful</option>
+                                                        <option value="gg02">GG02: Meaningful contributions</option>
+                                                        <option value="gg03">GG03: Consequences</option>
+                                                        <option value="gg04">GG04: Reporting Content</option>
+                                                        <option value="gg05">GG05: Personal info</option>
+                                                    </optgroup>
+                                                    <optgroup label="Specific Guidelines">
+                                                        <option value="sg00">SG00: Refrain from</option>
+                                                        <option value="sg01">SG01: Adult content</option>
+                                                        <option value="sg02">SG02: Threats</option>
+                                                        <option value="sg03">SG03: Dishonest</option>
+                                                        <option value="sg04">SG04: Duplicative</option>
+                                                        <option value="sg05">SG05: Activism</option>
+                                                        <option value="sg06">SG06: Advertising</option>
+                                                        <option value="sg07">SG07: Off-eBay sites</option>
+                                                        <option value="sg08">SG08: Reposted content</option>
+                                                        <option value="sg09">SG09: Mod warnings</option>
+                                                        <option value="sg10">SG10: Naming/shaming</option>
+                                                        <option value="sg11">SG11: Policy violations</option>
+                                                        <option value="sg12">SG12: Copyright</option>
+                                                    </optgroup>
+                                                    <optgroup label="Custom">
+                                                        <option value="other">✏️ Other (type custom violation)</option>
+                                                    </optgroup>
+                                                </select>
+                                                <button onClick={() => updateAdminNoteInput('removed', 'violation', '')} className={`px-3 py-2 text-sm rounded border ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200 border-slate-600' : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'}`}>Clear</button>
+                                            </div>
+                                            <input type="text" placeholder="Rule violation (select from dropdown or type custom)" value={adminNoteInputs.removed?.violation || ''} onChange={(e) => updateAdminNoteInput('removed', 'violation', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-900 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                        </div>
+                                        <div className={`rounded-lg p-3 border ${darkMode ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                            <pre className={`text-xs whitespace-pre-wrap font-mono ${textSecondary}`}>{getPopulatedAdminNote('removed')}</pre>
+                                        </div>
                                     </div>
                                 </div>
                             )}
