@@ -39,7 +39,7 @@ async function initializeTrainingData() {
       instanceCount: 0,
       trainingInstances: [],
       createdDate: new Date().toISOString(),
-      version: "2.3.2"
+      version: "2.3.3"
     };
     
     await fs.writeFile(TRAINING_DATA_FILE, JSON.stringify(initialData, null, 2));
@@ -118,11 +118,11 @@ async function initializeLearningPatterns() {
             }
           ],
           implementedDate: new Date().toISOString(),
-          version: "2.3.2"
+          version: "2.3.3"
         }
       },
       createdDate: new Date().toISOString(),
-      version: "2.3.2"
+      version: "2.3.3"
     };
     
     await fs.writeFile(LEARNING_PATTERNS_FILE, JSON.stringify(initialPatterns, null, 2));
@@ -142,7 +142,7 @@ async function readTrainingData() {
       instanceCount: 0,
       trainingInstances: [],
       createdDate: new Date().toISOString(),
-      version: "2.3.2"
+      version: "2.3.3"
     };
   }
 }
@@ -172,7 +172,7 @@ async function readLearningPatterns() {
       commonCorrections: {},
       userContributions: {},
       createdDate: new Date().toISOString(),
-      version: "2.3.2"
+      version: "2.3.3"
     };
   }
 }
@@ -340,7 +340,7 @@ app.delete('/api/training-data/reset', async (req, res) => {
       trainingInstances: [],
       createdDate: new Date().toISOString(),
       lastReset: new Date().toISOString(),
-      version: "2.3.2"
+      version: "2.3.3"
     };
     
     const success = await writeTrainingData(resetData);
@@ -820,7 +820,7 @@ app.delete('/api/scrape/cache/clear', async (req, res) => {
         lastCleanup: new Date().toISOString()
       },
       clearedDate: new Date().toISOString(),
-      version: "2.3.2"
+      version: "2.3.3"
     };
     
     await writeScrapingCache(clearedCache);
@@ -842,7 +842,7 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'healthy', 
     timestamp: new Date().toISOString(),
-    version: '2.3.1',
+    version: '2.3.3',
     features: ['learning_patterns', 'training_data', 'p1_enhancements']
   });
 });
@@ -866,7 +866,7 @@ async function initializeScrapingCache() {
         lastCleanup: new Date().toISOString()
       },
       createdDate: new Date().toISOString(),
-      version: "2.3.2"
+      version: "2.3.3"
     };
     
     await fs.writeFile(SCRAPING_CACHE_FILE, JSON.stringify(initialCache, null, 2));
@@ -1013,7 +1013,7 @@ async function startServer() {
   await initializeScrapingCache();
   
   app.listen(PORT, () => {
-    console.log(`🚀 eBay Moderation Assistant Server v2.3.2 running on port ${PORT}`);
+    console.log(`🚀 eBay Moderation Assistant Server v2.3.3 running on port ${PORT}`);
     console.log(`📊 Training data will be stored in: ${TRAINING_DATA_FILE}`);
     console.log(`🧠 Learning patterns will be stored in: ${LEARNING_PATTERNS_FILE}`);
     console.log(`🕷️ Scraping cache will be stored in: ${SCRAPING_CACHE_FILE}`);

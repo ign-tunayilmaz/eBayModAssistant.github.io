@@ -559,6 +559,19 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
     }
   };
 
+  const handleManualFlagChange = (priority, actionType, value) => {
+    const parsedValue = parseInt(value, 10);
+    const normalizedValue = parsedValue >= 0 ? parsedValue : 0;
+
+    setCounters({
+      ...counters,
+      [priority]: {
+        ...counters[priority],
+        [actionType]: Number.isNaN(normalizedValue) ? 0 : normalizedValue
+      }
+    });
+  };
+
   const resetCounters = () => {
     setCounters({
       P1: { NAR: 0, Edit: 0, Steer: 0, Remove: 0, Ban: 0, Locked: 0, Moved: 0 },
@@ -717,9 +730,17 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
                                 >
                                   <Minus className="w-4 h-4 text-red-600" />
                                 </button>
-                                <div className="flex-1 text-center min-w-0">
-                                  <div className="text-xs font-medium text-slate-600">{actionType}</div>
-                                  <div className="text-lg font-bold text-slate-800">{count}</div>
+                                <div className="flex-1 min-w-0">
+                                  <label className="text-xs font-medium text-slate-600 block mb-1">
+                                    {actionType}
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={count}
+                                    onChange={(e) => handleManualFlagChange(priority, actionType, e.target.value)}
+                                    className="w-full px-2 py-1 text-sm text-slate-800 border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  />
                                 </div>
                                 <button
                                   onClick={() => addFlag(priority, actionType)}

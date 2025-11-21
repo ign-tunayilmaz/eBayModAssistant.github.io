@@ -1,5 +1,18 @@
 # Changelog - eBay Moderation Tool
 
+## Version 2.3.3 - November 21, 2025
+
+### ✨ Improvements
+
+- Flag counters now include manual textboxes for NAR and every action type so supervisors can key-in exact counts without relying on repeated button clicks.
+- Synced version labels across the UI and server to reflect the latest release.
+
+### 🐛 Bug Fixes
+
+- Resolved an issue where the standalone dashboard still displayed legacy flag labels without editable inputs.
+
+---
+
 ## Version 2.3.2 - November 19, 2025
 
 ### 🆕 New Features
