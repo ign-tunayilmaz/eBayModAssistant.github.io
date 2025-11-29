@@ -53,10 +53,10 @@ const ModerationTool = () => {
   const dropdownRefs = useRef({});
   
   const [templateInputs, setTemplateInputs] = useState({
-    friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-    warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-    friendlyEditedPost: { username: '', here: '', guidelines: '', quote: '' },
-    warningEditedPost: { username: '', here: '', guidelines: '', quote: '' },
+    friendlyRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+    warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
+    friendlyEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
+    warningEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
     csRedirect: { username: '' },
     banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
   });
@@ -745,8 +745,8 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
       warningRemovedPost: { url: '', username: '', title: '', datetime: '', guidelines: '', quote: '' },
       friendlyEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
       warningEditedPost: { url: '', username: '', here: '', guidelines: '', quote: '' },
-      csRedirect: { url: '', username: '' },
-      banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+      csRedirect: { username: '' },
+      banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
     };
     if (defaults[templateId]) {
       setTemplateInputs(prev => ({ ...prev, [templateId]: defaults[templateId] }));
@@ -843,6 +843,29 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
   const getPopulatedAdminNote = (noteId) => {
     const inputs = adminNoteInputs[noteId];
     return '<a href="' + (inputs.link || '[link]') + '">Edited Post</a> to remove "' + (inputs.removed || '[removed portion]') + '".\nSent user a friendly PM for: ' + (inputs.violation || '[violation]');
+  };
+
+  const getAdminNoteFromTemplate = (templateId) => {
+    const inputs = templateInputs[templateId] || {};
+    const isEdited = templateId.includes('Edited');
+    const isFriendly = templateId.includes('friendly');
+    
+    if (isEdited) {
+      const postUrl = inputs.url || inputs.here || '[link]';
+      const removedText = inputs.quote || '[removed portion]';
+      const violation = inputs.guidelines || '[violation]';
+      const pmType = isFriendly ? 'friendly PM' : 'warning PM';
+      
+      return '<a href="' + postUrl + '">Edited Post</a> to remove "' + removedText + '".\nSent user a ' + pmType + ' for: ' + violation;
+    } else {
+      // Removed post
+      const postUrl = inputs.url || '[link]';
+      const removedText = inputs.quote || '[removed portion]';
+      const violation = inputs.guidelines || '[violation]';
+      const pmType = isFriendly ? 'friendly PM' : 'warning PM';
+      
+      return '<a href="' + postUrl + '">Removed Post</a> - "' + removedText + '".\nSent user a ' + pmType + ' for: ' + violation;
+    }
   };
 
   const bgClass = darkMode ? 'min-h-screen bg-slate-900 p-6' : 'min-h-screen bg-slate-50 p-6';
@@ -1236,11 +1259,26 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
                   template.isDynamic && h('div', { className: `${darkMode ? 'bg-slate-900' : 'bg-blue-50'} p-3 border-b ${borderColor} space-y-2` },
                     h('div', { className: 'flex items-center justify-between mb-2' },
                       h('div', { className: `text-xs font-semibold ${textSecondary}` }, 'Fill fields'),
-                      h('button', { 
-                        onClick: () => clearTemplateInputs(template.id),
-                        className: `px-3 py-1 rounded text-xs font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-300 hover:bg-slate-400 text-slate-700'}`
-                      }, 'Clear')
+                      h('div', { className: 'flex gap-2' },
+                        template.type !== 'username' && h('button', { 
+                          onClick: () => copyToClipboard(getAdminNoteFromTemplate(template.id), 'admin-' + template.id),
+                          className: `px-3 py-1 rounded text-xs font-medium flex items-center gap-1 ${darkMode ? 'bg-green-700 hover:bg-green-600 text-slate-200' : 'bg-green-600 hover:bg-green-700 text-white'}`
+                        },
+                          copiedId === 'admin-' + template.id ? h(React.Fragment, null, h(Check, { className: 'w-3 h-3' }), 'Copied!') : h(React.Fragment, null, h(Copy, { className: 'w-3 h-3' }), 'Admin Notes')
+                        ),
+                        h('button', { 
+                          onClick: () => clearTemplateInputs(template.id),
+                          className: `px-3 py-1 rounded text-xs font-medium ${darkMode ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-slate-300 hover:bg-slate-400 text-slate-700'}`
+                        }, 'Clear')
+                      )
                     ),
+                    template.type !== 'username' && h('input', { 
+                      type: 'text',
+                      placeholder: 'Post URL',
+                      value: templateInputs[template.id]?.url || '',
+                      onChange: (e) => updateTemplateInput(template.id, 'url', e.target.value),
+                      className: `w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`
+                    }),
                     h('input', { 
                       type: 'text',
                       placeholder: 'USERNAME',
