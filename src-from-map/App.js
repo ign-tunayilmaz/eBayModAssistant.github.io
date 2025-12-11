@@ -39,7 +39,43 @@ const ModerationTool = () => {
 
   const modActionTypes = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
 
-  // Load data from localStorage on mount
+  // V5 FIX: Schema validation helpers for localStorage data
+  const validateCounters = (data) => {
+    if (typeof data !== 'object' || data === null) return false;
+    const validPriorities = ['P1', 'P2', 'P3', 'P4'];
+    const validActions = ['NAR', 'Edit', 'Steer', 'Remove', 'Ban', 'Locked', 'Moved'];
+    return validPriorities.every(p => 
+      data[p] && typeof data[p] === 'object' &&
+      validActions.every(a => typeof data[p][a] === 'number' && data[p][a] >= 0)
+    );
+  };
+
+  const validateTemplateInputs = (data) => {
+    if (typeof data !== 'object' || data === null) return false;
+    const requiredKeys = ['friendlyRemovedPost', 'warningRemovedPost', 'friendlyEditedPost', 'warningEditedPost', 'csRedirect', 'banCombined'];
+    return requiredKeys.every(key => typeof data[key] === 'object');
+  };
+
+  const validateAdminNotes = (data) => {
+    if (typeof data !== 'object' || data === null) return false;
+    return data.edited && typeof data.edited === 'object';
+  };
+
+  const safeParseJSON = (str, validator) => {
+    try {
+      const parsed = JSON.parse(str);
+      if (validator && !validator(parsed)) {
+        console.warn('Invalid data structure, using defaults');
+        return null;
+      }
+      return parsed;
+    } catch (e) {
+      console.warn('Failed to parse JSON:', e.message);
+      return null;
+    }
+  };
+
+  // Load data from localStorage on mount with validation
   useEffect(() => {
     try {
       const savedCounters = localStorage.getItem('ebay-mod-counters');
@@ -47,12 +83,23 @@ const ModerationTool = () => {
       const savedAdminNotes = localStorage.getItem('ebay-mod-admin-notes');
       const savedDarkMode = localStorage.getItem('ebay-mod-dark-mode');
       
-      if (savedCounters) setCounters(JSON.parse(savedCounters));
-      if (savedTemplateInputs) setTemplateInputs(JSON.parse(savedTemplateInputs));
-      if (savedAdminNotes) setAdminNoteInputs(JSON.parse(savedAdminNotes));
-      if (savedDarkMode) setDarkMode(JSON.parse(savedDarkMode));
+      // V5 FIX: Validate data before setting state
+      const parsedCounters = savedCounters ? safeParseJSON(savedCounters, validateCounters) : null;
+      const parsedTemplateInputs = savedTemplateInputs ? safeParseJSON(savedTemplateInputs, validateTemplateInputs) : null;
+      const parsedAdminNotes = savedAdminNotes ? safeParseJSON(savedAdminNotes, validateAdminNotes) : null;
+      const parsedDarkMode = savedDarkMode ? safeParseJSON(savedDarkMode, (v) => typeof v === 'boolean') : null;
+      
+      if (parsedCounters) setCounters(parsedCounters);
+      if (parsedTemplateInputs) setTemplateInputs(parsedTemplateInputs);
+      if (parsedAdminNotes) setAdminNoteInputs(parsedAdminNotes);
+      if (parsedDarkMode !== null) setDarkMode(parsedDarkMode);
     } catch (error) {
       console.error('Error loading saved data:', error);
+      // Clear potentially corrupted localStorage
+      localStorage.removeItem('ebay-mod-counters');
+      localStorage.removeItem('ebay-mod-template-inputs');
+      localStorage.removeItem('ebay-mod-admin-notes');
+      localStorage.removeItem('ebay-mod-dark-mode');
     }
   }, []);
 
