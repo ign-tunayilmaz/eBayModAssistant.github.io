@@ -1,5 +1,17 @@
 # Changelog - eBay Moderation Tool
 
+## Version 2.3.4 - January 13, 2026
+
+### 🆕 New Templates
+
+- Added **How to Reach eBay** guidance under Additional Templates so moderators can quickly direct members to official support channels.
+
+### 🔧 Maintenance
+
+- Synced all version labels and metadata to 2.3.4 for the UI, server, and caching layers.
+
+---
+
 ## Version 2.3.3 - November 21, 2025
 
 ### ✨ Improvements
