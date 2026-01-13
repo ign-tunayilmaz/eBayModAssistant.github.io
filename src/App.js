@@ -358,6 +358,30 @@ Thank you.`,
     
     csRedirect: `<p>Hi [USERNAME],</p><p>&nbsp;</p><p>Thank you for submitting an inappropriate content report. However, please be advised that you have reached the eBay Community Moderation Team. Unfortunately, we are unable to assist you with your issue as we only deal with the Community.<br>&nbsp;</p><ol><li>If your issue is regarding an abusive or inappropriate message received through the eBay messaging system, then please visit the <a href="https://www.ebay.com/help/home">Customer Service</a> page as the Moderation Team can only deal with private messages on the Community.</li><li>If your issue is regarding a listing goes against policy, then please use the report link on the listing to report it.</li><li>If your issue is regarding a dispute with a buyer or seller, then you can open a case or contact Customer Support by visiting the CS page linked-to above.</li><li>If your issue is not listed above, then you can look for the answer by visiting eBay's Customer Service page linked-to above. Otherwise, please feel free to post here on the Community for member-to-member help. Please only post your question once on the most relevant board as duplicate posts are not allowed.</li></ol><p>In the future, please keep in mind that the only time you should "report inappropriate content" on the Community is when posts or private messages are in violation of the <a href="https://community.ebay.com/t5/About-the-Community/Community-Guidelines/m-p/26164369#M2">Community Guidelines</a>.</p><p>&nbsp;</p><p>Thank you for your understanding and cooperation, and for being a valued member of the eBay Community.</p><p>&nbsp;</p><p>-- eBay Community Moderation Community Team</p>`,
     
+    howToReachEbay: `Hi,
+
+Thank you for reaching out.
+
+You have some options:
+
+- You can request a call back from eBay here if the volume of request allows so: eBay Customer Service
+https://www.ebay.com/help/home
+
+- Contacting eBay via Social Media:
+
+Contact customer service by sending a PRIVATE message on social media. Customer service verifies your identity before responding.
+
+https://x.com/askebay
+https://www.facebook.com/ebay
+https://www.instagram.com/ebayforsellers/
+
+- You can also reach out to ask questions on Community to our experienced sellers from our Mentor Program via Ask a Mentor here:
+https://community.ebay.com/t5/Ask-a-Mentor/bd-p/ask-a-mentor
+
+Thank you!
+
+-- The eBay Community Moderation Team`,
+    
     gg01: `<p><strong>Be respectful.</strong>&nbsp;</p>`,
     gg02: `<p><strong>Share meaningful contributions.</strong>&nbsp;</p>`,
     gg03: `<p><strong>Consequences and considerations:</strong> When posts veer off topic, the eBay Community team may move content at their discretion.</p>`,
@@ -633,6 +657,7 @@ Example of Spam URL: ${inputs.spamUrl || '[Spam URL]'}`;
     { id: 'offTopic', name: 'Steering: Off Topic Discussion', content: templates.offTopic, isDynamic: false },
     { id: 'giftCardScam', name: 'Gift Card Scam Reply', content: templates.giftCardScam, isDynamic: false },
     { id: 'csRedirect', name: 'PM: CS Question Redirect', content: templates.csRedirect, isDynamic: false },
+    { id: 'howToReachEbay', name: 'How to Reach eBay', content: templates.howToReachEbay, isDynamic: false },
     { id: 'gg01', name: 'GG01: Be respectful', content: templates.gg01, isDynamic: false },
     { id: 'gg02', name: 'GG02: Share meaningful contributions', content: templates.gg02, isDynamic: false },
     { id: 'gg03', name: 'GG03: Consequences and considerations', content: templates.gg03, isDynamic: false },
