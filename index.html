@@ -161,7 +161,8 @@
                 friendlyEditedPost: { url: '', username: '', title: '', guidelines: '', quote: '' },
                 warningEditedPost: { url: '', username: '', title: '', guidelines: '', quote: '' },
                 csRedirect: { url: '', username: '' },
-                banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+                banCombined: { url: '', banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' },
+                banMessage: { name: '', period: '', date: '', rule: '' }
             });
 
             const [adminNoteInputs, setAdminNoteInputs] = useState({
@@ -521,6 +522,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 lockingOffTopic: 'Hi everyone,\n \nWe appreciate your participation in this discussion. However, the conversation has gone off-topic and has become a bit too heated. To help keep the community welcoming and constructive for all members, we\'re locking this thread from further replies.\n \nPlease remember to keep future discussions respectful and on-topic per our Community Guidelines.\n \nThank you for your understanding and for helping us keep the forums friendly and productive.\n \n— eBay Community Team',
                 heatedDiscussion: 'Hi everyone,\n \nThis discussion has gotten a bit heated. Please remember that, while it is fine to disagree with others, discussion should always remain friendly and respectful as required by the Community Guidelines.\n \nThank you for your cooperation.',
                 offTopic: 'Hi everyone,\n \nThis discussion has gotten a bit off topic. Please bring the discussion back to subject established in the original post.\n \nThank you.',
+                banMessage: 'Hello [NAME],\n\nWe\'re reaching out to let you know that your participation in the eBay Community has been restricted for [PERIOD], effective [DATE]\n\nThis action was taken due to a violation of our Community Guidelines, specifically regarding [RULE] behavior expectations. The eBay Community is a space built on mutual respect and constructive discussion, and we take these standards seriously to ensure a positive experience for all members.\n\nYour access will be automatically restored after the 14-day period.\n\nIf you believe this action was made in error, you may contact askcommunity@ebay.com to appeal the decision.\n\nThank you for your understanding and cooperation in keeping our Community a safe and welcoming place for everyone.\n\nKind regards,\neBay Community Moderation Team',
                 bullying: 'Removed for not following our Community Guidelines: Please keep discussions respectful and open-minded. Differences of opinion are welcome, but conversations must remain friendly, inclusive, and considerate toward all members.',
                 giftCardScam: 'Hi everyone, If you believe that you or someone you know was scammed into buying eBay Gift Cards, visit our gift card page to contact customer service and find additional information related to gift card scams. Thank you.',
                 csRedirect: 'Hi [USERNAME], Thank you for submitting an inappropriate content report. However, please be advised that you have reached the eBay Community Moderation Team. Unfortunately, we are unable to assist you with your issue as we only deal with the Community.',
@@ -633,6 +635,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 { id: 'warningRemovedPost', name: 'Warning PM: Removed Post', content: templates.warningRemovedPost, isDynamic: true, type: 'removed' },
                 { id: 'friendlyEditedPost', name: 'Friendly PM: Edited Post', content: templates.friendlyEditedPost, isDynamic: true, type: 'edited' },
                 { id: 'warningEditedPost', name: 'Warning PM: Edited Post', content: templates.warningEditedPost, isDynamic: true, type: 'edited' },
+                { id: 'banMessage', name: 'Ban Message', content: templates.banMessage, isDynamic: true, type: 'banMessage' },
                 { id: 'necroThread', name: 'Locking: Necro Thread', content: templates.necroThread },
                 { id: 'opRequest', name: 'Locking: OP Request', content: templates.opRequest },
                 { id: 'lockingOffTopic', name: 'Locking: Off Topic', content: templates.lockingOffTopic },
@@ -961,7 +964,8 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                     friendlyEditedPost: { username: '', title: '', guidelines: '', quote: '' },
                     warningEditedPost: { username: '', title: '', guidelines: '', quote: '' },
                     csRedirect: { username: '' },
-                    banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
+                    banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' },
+                    banMessage: { name: '', period: '', date: '', rule: '' }
                 };
                 if (defaults[templateId]) {
                     setTemplateInputs(prev => ({ ...prev, [templateId]: defaults[templateId] }));
@@ -993,6 +997,12 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                     inputs.banPeriod === '7 Days' ? '7 days' :
                                     inputs.banPeriod === '30 Days' ? '30 days' : 'indefinite';
                     populated = 'Internal Reason\n\n' + inputs.banPeriod + ' Login Restriction\n\nReasoning: ' + (inputs.reasoning || '[Reasoning]') + '\nUsername: ' + (inputs.username || '[Username]') + '\nEmail: ' + (inputs.email || '[Email]') + '\nIP: ' + (inputs.ip || '[IP]') + '\nURL: ' + (inputs.spamUrl || '[URL]') + '\nStart Date: ' + (inputs.startDate || '[DATE]') + '\nBan Length: ' + banLength + '\n\n---\n\nPublic Reason\n\nViolating the rules and policies of the eBay Community with actions such as ' + (inputs.reasoning || '[Reasoning]') + '. Your ban is effective from ' + (inputs.startDate || '[DATE]') + ' and will last ' + banLength + '.';
+                } else if (templateId === 'banMessage') {
+                    populated = populated
+                        .replace('[NAME]', inputs.name || '[NAME]')
+                        .replace('[PERIOD]', inputs.period || '[PERIOD]')
+                        .replace('[DATE]', inputs.date || '[DATE]')
+                        .replace('[RULE]', inputs.rule || '[RULE]');
                 }
                 return populated;
             };
@@ -1928,7 +1938,15 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                                                                     {template.type === 'edited' && (
                                                                         <input type="text" placeholder="TITLE" value={templateInputs[template.id]?.title || ''} onChange={(e) => updateTemplateInput(template.id, 'title', e.target.value)} data-template-id={template.id} data-field="title" className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
                                                                     )}
-                                                                    {template.type !== 'username' && (
+                                                                    {template.type === 'banMessage' && (
+                                                                        <>
+                                                                            <input type="text" placeholder="Name" value={templateInputs[template.id]?.name || ''} onChange={(e) => updateTemplateInput(template.id, 'name', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                            <input type="text" placeholder="Period (e.g., '14 days' or '1 day')" value={templateInputs[template.id]?.period || ''} onChange={(e) => updateTemplateInput(template.id, 'period', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                            <input type="text" placeholder="Date (effective date)" value={templateInputs[template.id]?.date || ''} onChange={(e) => updateTemplateInput(template.id, 'date', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                            <input type="text" placeholder="Rule violated" value={templateInputs[template.id]?.rule || ''} onChange={(e) => updateTemplateInput(template.id, 'rule', e.target.value)} className={`w-full px-3 py-2 text-sm border rounded ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200 placeholder-slate-500' : 'bg-white border-slate-300'}`} />
+                                                                        </>
+                                                                    )}
+                                                                    {template.type !== 'username' && template.type !== 'banMessage' && (
                                                                         <>
                                                                             <div className="space-y-2">
                                                                                 <div className="flex gap-2">
