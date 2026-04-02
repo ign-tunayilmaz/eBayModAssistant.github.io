@@ -456,7 +456,12 @@ Analyze this eBay community post and provide a moderation recommendation. Consid
     } else {
       const guideline = guidelineOptions.find(g => g.id === guidelineId);
       if (guideline) {
-        updateTemplateInput(templateId, 'guidelines', guideline.text);
+        let guidelineText = guideline.text;
+        // Append reporting guidance for Naming/shaming violation on edited/removed post PMs
+        if (guidelineId === 'sg10' && (templateId.includes('Removed') || templateId.includes('Edited'))) {
+          guidelineText += '\n \nIf you need to report a user or raise a concern, please avoid calling them out publicly. Instead, we encourage you to use the appropriate reporting channels so our team can review the issue properly. You can find the information about "how to report a seller" here: https://www.ebay.com/help/selling/resolving-buyer-issues/reporting-issue-buyer?id=4084';
+        }
+        updateTemplateInput(templateId, 'guidelines', guidelineText);
       }
     }
   };
