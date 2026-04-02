@@ -541,10 +541,10 @@ Provide your analysis in the exact JSON format specified in your instructions.`
 
             // Templates data
             const templates = {
-                friendlyRemovedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post "[TITLE]" from [DATE_TIME] has been removed because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYou posted the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
-                warningRemovedPost: 'Hi [USERNAME],\n \nThis is an official moderation warning to inform you that your recent post "[TITLE]" from [DATE_TIME] has been removed because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYou posted the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
-                friendlyEditedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post "[TITLE]" has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
-                warningEditedPost: 'Hi [USERNAME],\n \nThis is an official moderation warning to inform you that your recent post "[TITLE]" has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
+                friendlyRemovedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post "[TITLE]" from [DATE_TIME] has been removed because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYou posted the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.[NAMING_SHAMING_NOTE]\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
+                warningRemovedPost: 'Hi [USERNAME],\n \nThis is an official moderation warning to inform you that your recent post "[TITLE]" from [DATE_TIME] has been removed because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYou posted the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.[NAMING_SHAMING_NOTE]\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
+                friendlyEditedPost: 'Hi [USERNAME],\n \nThis is a friendly moderation notice to inform you that your recent post "[TITLE]" has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.[NAMING_SHAMING_NOTE]\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
+                warningEditedPost: 'Hi [USERNAME],\n \nThis is an official moderation warning to inform you that your recent post "[TITLE]" has been edited because it violated the following eBay Community Guidelines:\n \n[GUIDELINES]\n \nYour post was edited to remove the following:\n \n"[QUOTE]"\n \nPlease take a moment to review the Community Guidelines to avoid making the same mistake again in the future.[NAMING_SHAMING_NOTE]\n \nThank you for your cooperation in keeping the Community a welcoming, helpful, and respectful place for all users.\n \n-- The eBay Community Moderation Team',
                 necroThread: 'Hi everyone,\n \nDue to the age of this thread, it has been closed to further replies. Please feel free to start a new thread if you wish to continue to discuss this topic.\n \nThank you for understanding.',
                 opRequest: 'Hi everyone,\n \nThis thread has been closed at the request of the OP.\n \nThank you for understanding.',
                 lockingOffTopic: 'Hi everyone,\n \nWe appreciate your participation in this discussion. However, the conversation has gone off-topic and has become a bit too heated. To help keep the community welcoming and constructive for all members, we\'re locking this thread from further replies.\n \nPlease remember to keep future discussions respectful and on-topic per our Community Guidelines.\n \nThank you for your understanding and for helping us keep the forums friendly and productive.\n \n— eBay Community Team',
@@ -621,6 +621,7 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 if (guidelineId === 'other') {
                     // Clear the field and focus on the text input for custom entry
                     updateTemplateInput(templateId, 'guidelines', '');
+                    updateTemplateInput(templateId, 'namingShamingNote', '');
                     // Small delay to ensure the input is cleared before focusing
                     setTimeout(() => {
                         const guidelinesInput = document.querySelector(`[data-template-id="${templateId}"][data-field="guidelines"]`);
@@ -631,12 +632,13 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                 } else {
                     const guideline = guidelineOptions.find(g => g.id === guidelineId);
                     if (guideline) {
-                        let guidelineText = guideline.text;
-                        // Append reporting guidance for Naming/shaming violation on edited/removed post PMs
+                        updateTemplateInput(templateId, 'guidelines', guideline.text);
+                        // Set naming/shaming reporting note for sg10 on Edited/Removed post PMs
                         if (guidelineId === 'sg10' && (templateId.includes('Removed') || templateId.includes('Edited'))) {
-                            guidelineText += '\n \nIf you need to report a user or raise a concern, please avoid calling them out publicly. Instead, we encourage you to use the appropriate reporting channels so our team can review the issue properly. You can find the information about "how to report a seller" here: https://www.ebay.com/help/selling/resolving-buyer-issues/reporting-issue-buyer?id=4084';
+                            updateTemplateInput(templateId, 'namingShamingNote', '\n \nIf you need to report a user or raise a concern, please avoid calling them out publicly. Instead, we encourage you to use the appropriate reporting channels so our team can review the issue properly. You can find the information about "how to report a seller" here: https://www.ebay.com/help/selling/resolving-buyer-issues/reporting-issue-buyer?id=4084');
+                        } else {
+                            updateTemplateInput(templateId, 'namingShamingNote', '');
                         }
-                        updateTemplateInput(templateId, 'guidelines', guidelineText);
                     }
                 }
             };
@@ -1100,10 +1102,10 @@ Provide your analysis in the exact JSON format specified in your instructions.`
 
             const clearTemplateInputs = (templateId) => {
                 const defaults = {
-                    friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                    warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '' },
-                    friendlyEditedPost: { username: '', title: '', guidelines: '', quote: '' },
-                    warningEditedPost: { username: '', title: '', guidelines: '', quote: '' },
+                    friendlyRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '', namingShamingNote: '' },
+                    warningRemovedPost: { username: '', title: '', datetime: '', guidelines: '', quote: '', namingShamingNote: '' },
+                    friendlyEditedPost: { username: '', title: '', guidelines: '', quote: '', namingShamingNote: '' },
+                    warningEditedPost: { username: '', title: '', guidelines: '', quote: '', namingShamingNote: '' },
                     csRedirect: { username: '' },
                     banCombined: { banPeriod: '1 Day', reasoning: '', username: '', email: '', ip: '', spamUrl: '', startDate: '' }
                 };
@@ -1122,13 +1124,15 @@ Provide your analysis in the exact JSON format specified in your instructions.`
                         .replace('[TITLE]', inputs.title || '[TITLE]')
                         .replace('[DATE_TIME]', inputs.datetime || '[DATE_TIME]')
                         .replace('[GUIDELINES]', inputs.guidelines || '[GUIDELINES]')
-                        .replace('[QUOTE]', inputs.quote || '[QUOTE]');
+                        .replace('[QUOTE]', inputs.quote || '[QUOTE]')
+                        .replace('[NAMING_SHAMING_NOTE]', inputs.namingShamingNote || '');
                 } else if (templateId.includes('Edited')) {
                     populated = populated
                         .replace('[USERNAME]', inputs.username || '[USERNAME]')
                         .replace('[TITLE]', inputs.title || '[TITLE]')
                         .replace('[GUIDELINES]', inputs.guidelines || '[GUIDELINES]')
-                        .replace('[QUOTE]', inputs.quote || '[QUOTE]');
+                        .replace('[QUOTE]', inputs.quote || '[QUOTE]')
+                        .replace('[NAMING_SHAMING_NOTE]', inputs.namingShamingNote || '');
                 } else if (templateId === 'csRedirect') {
                     populated = populated.replace('[USERNAME]', inputs.username || '[USERNAME]');
                 } else if (templateId === 'banCombined') {
